@@ -44,7 +44,7 @@ FROM base AS dev
 WORKDIR /opt/portfoliodb
 
 # Install debugging tools for development
-RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y procps net-tools && rm -rf /var/lib/apt/lists/*
 
 # Create necessary directories
 RUN mkdir -p /opt/portfoliodb/etc /opt/portfoliodb/scripts /var/log/postgresql
