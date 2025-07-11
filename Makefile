@@ -30,7 +30,7 @@ $(BUILD_DIR)/portfoliodb: external/portfoliodb/Cargo.toml
 portfoliodb: $(BUILD_DIR)/portfoliodb
 
 # Build development Docker image
-docker:
+dev:
 	@echo "Building development Docker image..."
 	cd docker && docker build --target dev -t portfoliodb:dev .
 
@@ -109,4 +109,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all portfoliodb docker prod init-db delete-db reset-db run logs watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all portfoliodb dev prod init-db delete-db reset-db run logs watch restart stop clean clean-containers clean-images clean-submodules clean-all status
