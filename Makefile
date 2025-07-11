@@ -64,7 +64,10 @@ logs:
 
 watch: external/portfoliodb/Cargo.toml
 	@echo "Watching for changes in PortfolioDB repository..."
-	cd external/portfoliodb && cargo watch -x 'make all' -x 'cp target/release/portfoliodb ../../$(BUILD_DIR)/portfoliodb'
+	cd external/portfoliodb && cargo watch \
+		-x 'make all' \
+		-x 'cp target/release/portfoliodb ../../$(BUILD_DIR)/portfoliodb' \
+		-x 'cd ../../docker && docker-compose exec portfoliodb-dev /opt/portfoliodb/scripts/portfoliodb.sh restart'
 
 stop:
 	@echo "Stopping containers..."
