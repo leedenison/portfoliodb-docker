@@ -3,12 +3,6 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Binary (mounted as volume in dev)
-bin/
-
-# Scripts (copied explicitly)
-scripts/
-
 # IDE files
 .vscode/
 .idea/

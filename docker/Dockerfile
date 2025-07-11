@@ -1,5 +1,9 @@
 # Multi-stage Dockerfile for PortfolioDB
-FROM rust:1.75-slim as base
+FROM rust:1.81-slim as base
+
+# =============================================================================
+# BASE STAGE - PostgreSQL and TimescaleDB Installation
+# =============================================================================
 
 # Install PostgreSQL and TimescaleDB dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,16 +14,19 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg2 \
     lsb-release \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Add TimescaleDB repository and install TimescaleDB
-RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | apt-key add - \
-    && echo "deb https://packagecloud.io/timescale/timescaledb/debian/ $(lsb_release -c -s) main" | tee /etc/apt/sources.list.d/timescaledb.list \
+RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor -o /usr/share/keyrings/timescaledb-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/timescaledb-archive-keyring.gpg] https://packagecloud.io/timescale/timescaledb/debian/ $(lsb_release -c -s) main" | tee /etc/apt/sources.list.d/timescaledb.list \
     && apt-get update \
-    && apt-get install -y timescaledb-postgresql-15 \
+    && apt-get install -y timescaledb-2-postgresql-15 \
     && rm -rf /var/lib/apt/lists/*
 
-# Development stage
+# =============================================================================
+# DEVELOPMENT STAGE - Development Environment with Hot Reload
+# =============================================================================
 FROM base as dev
 
 # Install cargo-watch for development
@@ -50,27 +57,10 @@ EXPOSE 8080 5432
 
 CMD ["/opt/portfoliodb/scripts/services.sh", "start"]
 
-# Production stage
-FROM debian:bookworm-slim as prod
-
-# Install PostgreSQL and TimescaleDB dependencies
-RUN apt-get update && apt-get install -y \
-    postgresql \
-    postgresql-contrib \
-    postgresql-common \
-    postgresql-client \
-    wget \
-    gnupg2 \
-    lsb-release \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add TimescaleDB repository and install TimescaleDB
-RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | apt-key add - \
-    && echo "deb https://packagecloud.io/timescale/timescaledb/debian/ $(lsb_release -c -s) main" | tee /etc/apt/sources.list.d/timescaledb.list \
-    && apt-get update \
-    && apt-get install -y timescaledb-postgresql-15 \
-    && rm -rf /var/lib/apt/lists/*
+# =============================================================================
+# PRODUCTION STAGE - Optimized Production Environment
+# =============================================================================
+FROM base as prod
 
 WORKDIR /opt/portfoliodb
 
