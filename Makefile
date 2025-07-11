@@ -9,8 +9,14 @@ endif
 GIT_SUBMODULE_FLAGS ?=
 BUILD_DIR = docker/bin
 DOCKER_IMAGE_NAME = portfoliodb
+POSTGRES_DATA_DIR = /tmp/portfoliodb/data
 
 all: portfoliodb prod
+
+# Ensure PostgreSQL data directory exists
+$(POSTGRES_DATA_DIR):
+	@echo "Creating PostgreSQL data directory: $(POSTGRES_DATA_DIR)"
+	@mkdir -p $(POSTGRES_DATA_DIR)
 
 # Initialize and update git submodule
 external/portfoliodb/Cargo.toml:
@@ -34,11 +40,24 @@ prod: portfoliodb
 	@echo "Building production Docker image..."
 	cd docker && docker build --target prod -t $(DOCKER_IMAGE_NAME):prod .
 
-run: portfoliodb docker
+# Initialize database (first run)
+init-db: $(POSTGRES_DATA_DIR)
+	@echo "Initializing database..."
+	cd docker && docker-compose --profile init up portfoliodb-init
+
+# Reset database (delete and rebuild from scratch)
+reset-db: $(POSTGRES_DATA_DIR)
+	@echo "Resetting database..."
+	RESET_DB=true cd docker && docker-compose --profile init up portfoliodb-init
+
+# Run development environment
+run: portfoliodb docker $(POSTGRES_DATA_DIR)
 	@echo "Starting development environment..."
 	cd docker && docker-compose up -d
 	@echo "Development container started. Binary will be auto-reloaded on changes."
 	@echo "Run 'make logs' to view the container logs."
+
+
 
 logs:
 	cd docker && docker-compose logs -f
@@ -67,9 +86,10 @@ status:
 	@echo "=== PortfolioDB Build Status ==="
 	@echo "Binary exists: $$([ -f $(BUILD_DIR)/portfoliodb ] && echo "Yes" || echo "No")"
 	@echo "Submodule initialized: $$([ -d external/portfoliodb ] && echo "Yes" || echo "No")"
+	@echo "PostgreSQL data directory exists: $$([ -d $(POSTGRES_DATA_DIR) ] && echo "Yes" || echo "No")"
 	@echo "Submodule status:"
 	@git submodule status 2>/dev/null || echo "No submodules configured"
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all portfoliodb docker prod run logs watch restart stop clean clean-all status
+.PHONY: all portfoliodb docker prod init-db reset-db run logs watch restart stop clean clean-all status

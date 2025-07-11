@@ -1,6 +1,6 @@
-# PortfolioDB Docker Build System
+# PortfolioDB Docker Development Environment
 
-This project manages the build and deployment of the PortfolioDB application using Docker with multi-stage builds.
+This project provides a Docker-based development environment for PortfolioDB with PostgreSQL and TimescaleDB integration.
 
 ## Prerequisites
 
@@ -11,14 +11,15 @@ This project manages the build and deployment of the PortfolioDB application usi
 
 ## Quick Start
 
-1. **Build everything:**
+1. **First-time setup:**
    ```bash
-   make all
+   make init-db
+   make run
    ```
 
-2. **Start development environment:**
+2. **Subsequent runs:**
    ```bash
-   make dev
+   make run
    ```
 
 ## Available Commands
@@ -30,7 +31,9 @@ This project manages the build and deployment of the PortfolioDB application usi
 - `make prod` - Build production Docker image
 
 ### Development Commands
-- `make run` - Start development container with volume mounts
+- `make run` - Start development environment (requires existing database)
+- `make init-db` - Initialize database only (first run)
+- `make reset-db` - Reset database (delete and rebuild from scratch)
 - `make stop` - Stop development service
 - `make status` - Show current build status
 - `make logs` - View logs from development service
@@ -42,38 +45,68 @@ This project manages the build and deployment of the PortfolioDB application usi
 
 ## Development Workflow
 
-1. Start the development environment:
+### First Time Setup
+
+1. **Initialize database:**
+   ```bash
+   make init-db
+   ```
+   This will:
+   - Create the PostgreSQL data directory (`/tmp/portfoliodb/data`)
+   - Initialize a fresh PostgreSQL cluster with TimescaleDB
+   - Create the database and user
+
+2. **Start development environment:**
    ```bash
    make run
    ```
-   This will automatically build the PortfolioDB binary if needed before starting the container.
+   This starts the development container with the initialized database.
 
-2. View logs (optional):
+### Regular Development
+
+1. **Start the development environment:**
+   ```bash
+   make run
+   ```
+   This starts the container with the existing database.
+
+2. **View logs (optional):**
    ```bash
    make logs
    ```
 
-3. In another terminal, watch for changes:
+3. **Watch for changes (optional):**
    ```bash
    make watch
    ```
+   The binary will be automatically rebuilt and the service restarted when changes are detected.
 
-4. The binary will be automatically rebuilt and the service restarted when changes are detected.
+### Database Management
+
+- **Reset database (delete everything and start fresh):**
+  ```bash
+  make reset-db
+  ```
+
+- **Initialize database only (without starting dev service):**
+  ```bash
+  make init-db
+  ```
 
 ## Ports
 
-- **Development**: http://localhost:8080
+- **PortfolioDB gRPC**: localhost:50001
 - **PostgreSQL**: localhost:5432
 
 ## Database Configuration
 
-The application uses PostgreSQL with TimescaleDB extensions for time-series data:
+The application uses PostgreSQL 17 with TimescaleDB extensions:
 
 - **Database**: `portfoliodb`
 - **Username**: `portfoliodb`
-- **Password**: `portfoliodb_dev_password` (dev) / `portfoliodb_prod_password` (prod)
-- **Configuration**: Available at `/opt/portfoliodb/etc/postgresql.json` inside the container
-- **TimescaleDB**: Automatically installed and enabled
+- **Password**: `portfoliodb_dev_password`
+- **Connection String**: `postgres://portfoliodb:portfoliodb_dev_password@localhost:5432/portfoliodb`
+- **TimescaleDB**: Automatically installed and configured
 
 ### Connecting to the Database
 
@@ -83,4 +116,4 @@ psql -h localhost -p 5432 -U portfoliodb -d portfoliodb
 
 # Or connect from inside the container
 docker exec -it portfoliodb-dev psql -U portfoliodb -d portfoliodb
-``` 
+```

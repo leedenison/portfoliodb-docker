@@ -5,17 +5,17 @@
 
 POSTGRES_DATA_DIR="/var/lib/postgresql/data"
 POSTGRES_LOG_DIR="/var/log/postgresql"
-POSTGRES_CLUSTER="15 main"
+POSTGRES_CLUSTER="17 main"
 
 # Function to start PostgreSQL
 start_postgres() {
     echo "Starting PostgreSQL..."
     
-    # Create directories if they don't exist
-    mkdir -p "$POSTGRES_DATA_DIR" "$POSTGRES_LOG_DIR"
+    # Create log directory if it doesn't exist
+    mkdir -p "$POSTGRES_LOG_DIR"
     
     # Start PostgreSQL cluster
-    pg_ctlcluster 15 main start
+    pg_ctlcluster 17 main start
     
     # Wait for PostgreSQL to be ready
     echo "Waiting for PostgreSQL to be ready..."
@@ -24,24 +24,13 @@ start_postgres() {
         sleep 1
     done
     
-    # Initialize database if needed
-    if ! su - postgres -c "psql -lqt | cut -d \| -f 1 | grep -qw portfoliodb"; then
-        echo "Initializing PortfolioDB database..."
-        su - postgres -c "psql -c \"CREATE USER portfoliodb WITH PASSWORD 'portfoliodb_dev_password';\""
-        su - postgres -c "psql -c \"CREATE DATABASE portfoliodb OWNER portfoliodb;\""
-    fi
-    
-    # Enable TimescaleDB extension
-    echo "Enabling TimescaleDB extension..."
-    su - postgres -c "psql -d portfoliodb -c \"CREATE EXTENSION IF NOT EXISTS timescaledb;\""
-    
     echo "PostgreSQL started successfully"
 }
 
 # Function to stop PostgreSQL
 stop_postgres() {
     echo "Stopping PostgreSQL..."
-    pg_ctlcluster 15 main stop
+    pg_ctlcluster 17 main stop
     echo "PostgreSQL stopped"
 }
 

@@ -1,6 +1,26 @@
-version: '3.8'
-
 services:
+  # Database initialization service
+  portfoliodb-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: portfoliodb-init
+    volumes:
+      - /tmp/portfoliodb/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DATA_DIR=/var/lib/postgresql/data
+      - POSTGRES_HOST=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=portfoliodb
+      - POSTGRES_PASSWORD=portfoliodb_dev_password
+      - POSTGRES_DB=portfoliodb
+      - RESET_DB=${RESET_DB:-false}
+    command: ["/opt/portfoliodb/scripts/init-db.sh"]
+    profiles:
+      - init
+
+  # Main development service
   portfoliodb-dev:
     build:
       context: .
@@ -8,11 +28,17 @@ services:
       target: dev
     container_name: portfoliodb-dev
     ports:
-      - "8080:8080"
+      - "50001:50001"
       - "5432:5432"
     volumes:
       - ./bin/portfoliodb:/opt/portfoliodb/portfoliodb
+      - /tmp/portfoliodb/data:/var/lib/postgresql/data
     environment:
       - RUST_LOG=debug
       - DATABASE_URL=postgres://portfoliodb:portfoliodb_dev_password@localhost:5432/portfoliodb
-    restart: unless-stopped 
+      - POSTGRES_DATA_DIR=/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local 
