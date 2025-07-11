@@ -1,0 +1,3 @@
+[submodule "external/portfoliodb"]
+	path = external/portfoliodb
+	url = /home/lee/Projects/PortfolioDB/repos/portfoliodb.git
