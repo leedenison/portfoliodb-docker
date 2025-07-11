@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  portfoliodb-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: portfoliodb-dev
+    ports:
+      - "8080:8080"
+      - "5432:5432"
+    volumes:
+      - ./bin/portfoliodb:/opt/portfoliodb/portfoliodb
+    environment:
+      - RUST_LOG=debug
+    restart: unless-stopped 
