@@ -6,22 +6,21 @@ ifneq (,$(wildcard .env))
     export
 endif
 
-PORTFOLIODB_URL ?= https://github.com/leedenison/portfoliodb.git
-PORTFOLIODB_DIR = external/portfoliodb
+GIT_SUBMODULE_FLAGS ?=
 BUILD_DIR = docker/bin
 DOCKER_IMAGE_NAME = portfoliodb
 
 all: portfoliodb prod
 
 # Initialize and update git submodule
-$(PORTFOLIODB_DIR)/Cargo.toml:
+external/portfoliodb/Cargo.toml:
 	@echo "Initializing and updating PortfolioDB submodule..."
 	git $(GIT_SUBMODULE_FLAGS) submodule update --init --recursive
 
-$(BUILD_DIR)/portfoliodb: $(PORTFOLIODB_DIR)/Cargo.toml
+$(BUILD_DIR)/portfoliodb: external/portfoliodb/Cargo.toml
 	@echo "Building PortfolioDB binary..."
 	@mkdir -p $(BUILD_DIR)
-	(cd $(PORTFOLIODB_DIR) && make all) && cp $(PORTFOLIODB_DIR)/build/portfoliodb $(BUILD_DIR)/portfoliodb
+	(cd external/portfoliodb && make all) && cp external/portfoliodb/target/release/portfoliodb $(BUILD_DIR)/portfoliodb
 
 portfoliodb: $(BUILD_DIR)/portfoliodb
 
@@ -44,9 +43,9 @@ run: portfoliodb docker
 logs:
 	cd docker && docker-compose logs -f
 
-watch: $(PORTFOLIODB_DIR)/Cargo.toml
+watch: external/portfoliodb/Cargo.toml
 	@echo "Watching for changes in PortfolioDB repository..."
-	cd $(PORTFOLIODB_DIR) && cargo watch -x 'make all' -x 'cp target/release/portfoliodb ../../$(BUILD_DIR)/portfoliodb'
+	cd external/portfoliodb && cargo watch -x 'make all' -x 'cp target/release/portfoliodb ../../$(BUILD_DIR)/portfoliodb'
 
 stop:
 	@echo "Stopping containers..."
@@ -61,13 +60,13 @@ clean-all: clean
 	cd docker && docker-compose down --rmi local --volumes --remove-orphans
 	docker rmi $(DOCKER_IMAGE_NAME):dev $(DOCKER_IMAGE_NAME):prod 2>/dev/null || true
 	@echo "Cleaning submodule..."
-	git $(GIT_SUBMODULE_FLAGS) submodule deinit -f $(PORTFOLIODB_DIR) 2>/dev/null || true
-	rm -rf $(PORTFOLIODB_DIR)
+	git $(GIT_SUBMODULE_FLAGS) submodule deinit -f external/portfoliodb 2>/dev/null || true
+	rm -rf external/portfoliodb
 
 status:
 	@echo "=== PortfolioDB Build Status ==="
 	@echo "Binary exists: $$([ -f $(BUILD_DIR)/portfoliodb ] && echo "Yes" || echo "No")"
-	@echo "Submodule initialized: $$([ -d $(PORTFOLIODB_DIR) ] && echo "Yes" || echo "No")"
+	@echo "Submodule initialized: $$([ -d external/portfoliodb ] && echo "Yes" || echo "No")"
 	@echo "Submodule status:"
 	@git submodule status 2>/dev/null || echo "No submodules configured"
 	@echo "Docker Compose services:"
