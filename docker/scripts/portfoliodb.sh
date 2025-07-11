@@ -26,9 +26,16 @@ start_portfoliodb() {
         exit 1
     fi
     
-    # Start the application
+    # Check if DATABASE_URL is set
+    if [ -z "$DATABASE_URL" ]; then
+        echo "Error: DATABASE_URL environment variable is not set"
+        exit 1
+    fi
+    
+    # Start the application with database URL
     echo "Starting $APP_NAME in $(if [ "$ENVIRONMENT" = "prod" ]; then echo "production"; else echo "development"; fi) mode..."
-    exec "$APP_BINARY"
+    echo "Using database URL: $DATABASE_URL"
+    exec "$APP_BINARY" --database-url "$DATABASE_URL"
 }
 
 # Function to stop PortfolioDB

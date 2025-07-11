@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for PortfolioDB
-FROM rust:1.81-slim as base
+FROM rust:1.81-slim AS base
 
 # =============================================================================
 # BASE STAGE - PostgreSQL and TimescaleDB Installation
@@ -27,7 +27,7 @@ RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | gpg
 # =============================================================================
 # DEVELOPMENT STAGE - Development Environment with Hot Reload
 # =============================================================================
-FROM base as dev
+FROM base AS dev
 
 # Install cargo-watch for development
 RUN cargo install cargo-watch
@@ -43,16 +43,6 @@ COPY scripts/ /opt/portfoliodb/scripts/
 # Make scripts executable
 RUN chmod +x /opt/portfoliodb/scripts/*.sh
 
-# Create PostgreSQL configuration
-RUN echo '{\n\
-  "host": "localhost",\n\
-  "port": 5432,\n\
-  "database": "portfoliodb",\n\
-  "username": "portfoliodb",\n\
-  "password": "portfoliodb_dev_password",\n\
-  "ssl_mode": "disable"\n\
-}' > /opt/portfoliodb/etc/postgresql.json
-
 EXPOSE 8080 5432
 
 CMD ["/opt/portfoliodb/scripts/services.sh", "start"]
@@ -60,7 +50,7 @@ CMD ["/opt/portfoliodb/scripts/services.sh", "start"]
 # =============================================================================
 # PRODUCTION STAGE - Optimized Production Environment
 # =============================================================================
-FROM base as prod
+FROM base AS prod
 
 WORKDIR /opt/portfoliodb
 
@@ -75,16 +65,6 @@ RUN chmod +x /opt/portfoliodb/scripts/*.sh
 
 # Copy the PortfolioDB binary
 COPY bin/portfoliodb /opt/portfoliodb/portfoliodb
-
-# Create PostgreSQL configuration
-RUN echo '{\n\
-  "host": "localhost",\n\
-  "port": 5432,\n\
-  "database": "portfoliodb",\n\
-  "username": "portfoliodb",\n\
-  "password": "portfoliodb_prod_password",\n\
-  "ssl_mode": "disable"\n\
-}' > /opt/portfoliodb/etc/postgresql.json
 
 # Create a non-root user
 RUN useradd -r -s /bin/false portfoliodb && \
