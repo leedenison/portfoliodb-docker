@@ -8,7 +8,6 @@ endif
 
 GIT_SUBMODULE_FLAGS ?=
 BUILD_DIR = docker/bin
-DOCKER_IMAGE_NAME = portfoliodb
 POSTGRES_DATA_DIR = /tmp/portfoliodb/data
 
 all: portfoliodb prod
@@ -33,12 +32,12 @@ portfoliodb: $(BUILD_DIR)/portfoliodb
 # Build development Docker image
 docker:
 	@echo "Building development Docker image..."
-	cd docker && docker build --target dev -t $(DOCKER_IMAGE_NAME):dev .
+	cd docker && docker build --target dev -t portfoliodb:dev .
 
 # Build production Docker image
 prod: portfoliodb
 	@echo "Building production Docker image..."
-	cd docker && docker build --target prod -t $(DOCKER_IMAGE_NAME):prod .
+	cd docker && docker build --target prod -t portfoliodb:prod .
 
 # Initialize database (first run)
 init-db: $(POSTGRES_DATA_DIR)
@@ -82,15 +81,23 @@ clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf $(BUILD_DIR)
 
-clean-all: clean
-	@echo "Cleaning Docker containers and images..."
-	cd docker && docker-compose down --rmi local --volumes --remove-orphans
-	docker rmi $(DOCKER_IMAGE_NAME):dev $(DOCKER_IMAGE_NAME):prod 2>/dev/null || true
-	@echo "Removing any stale portfoliodb containers..."
+clean-containers:
+	@echo "Cleaning Docker containers..."
+	cd docker && docker-compose down --volumes --remove-orphans
 	docker rm -f portfoliodb-init 2>/dev/null || true
 	docker rm -f portfoliodb-dev 2>/dev/null || true
+
+clean-images:
+	@echo "Cleaning Docker images..."
+	cd docker && docker-compose down --rmi local
+	docker rmi portfoliodb:dev portfoliodb:prod 2>/dev/null || true
+	docker rmi docker-portfoliodb-init:latest 2>/dev/null || true
+
+clean-submodules:
 	@echo "Cleaning submodule build artifacts..."
 	cd external/portfoliodb && make clean 2>/dev/null || true
+
+clean-all: clean clean-containers clean-images clean-submodules
 
 status:
 	@echo "=== PortfolioDB Build Status ==="
@@ -102,4 +109,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all portfoliodb docker prod init-db delete-db reset-db run logs watch restart stop clean clean-all status
+.PHONY: all portfoliodb docker prod init-db delete-db reset-db run logs watch restart stop clean clean-containers clean-images clean-submodules clean-all status
