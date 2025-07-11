@@ -41,18 +41,15 @@ prod: portfoliodb
 
 # Initialize database (first run)
 init-db: $(POSTGRES_DATA_DIR)
-	@echo "Initializing database..."
 	cd docker && docker-compose --profile init up portfoliodb-init
 
 # Delete database data (clean slate)
 delete-db: $(POSTGRES_DATA_DIR)
-	@echo "Deleting database data..."
-	DB_ACTION=delete cd docker && docker-compose --profile init up portfoliodb-init
+	cd docker && DB_ACTION=delete docker-compose --profile init up portfoliodb-init
 
 # Reset database (delete and rebuild from scratch)
 reset-db: $(POSTGRES_DATA_DIR)
-	@echo "Resetting database..."
-	DB_ACTION=reset cd docker && docker-compose --profile init up portfoliodb-init
+	cd docker && DB_ACTION=reset docker-compose --profile init up portfoliodb-init
 
 # Run development environment
 run: portfoliodb docker $(POSTGRES_DATA_DIR)
@@ -60,8 +57,6 @@ run: portfoliodb docker $(POSTGRES_DATA_DIR)
 	cd docker && docker-compose up -d
 	@echo "Development container started. Binary will be auto-reloaded on changes."
 	@echo "Run 'make logs' to view the container logs."
-
-
 
 logs:
 	cd docker && docker-compose logs -f

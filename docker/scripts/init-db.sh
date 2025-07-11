@@ -54,7 +54,7 @@ init_database() {
     else
         echo "Creating new PostgreSQL cluster in $POSTGRES_DATA_DIR"
         # Initialize new cluster in the mounted volume
-        su postgres -c "/usr/lib/postgresql/17/bin/initdb -D $POSTGRES_DATA_DIR"
+        su postgres -c "/usr/lib/postgresql/17/bin/initdb -D $POSTGRES_DATA_DIR --encoding=UTF8 --locale=C"
         
         # Start the cluster
         su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR start"
@@ -74,15 +74,10 @@ init_database() {
 delete_database() {
     echo "Deleting database data..."
     
-    # Stop PostgreSQL if running
-    if [ -f "$POSTGRES_DATA_DIR/postmaster.pid" ]; then
-        su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR stop" || true
-    fi
-    
     # Remove data directory
     if [ -d "$POSTGRES_DATA_DIR" ]; then
         echo "Removing existing data directory..."
-        rm -rf "$POSTGRES_DATA_DIR"
+        rm -rf "$POSTGRES_DATA_DIR"/*
     fi
     
     echo "Database data deleted successfully"
@@ -159,8 +154,6 @@ ensure_timescaledb_preload() {
 
 # Main initialization logic
 main() {
-    echo "Starting database initialization..."
-    
     # Handle different DB_ACTION values
     case "$DB_ACTION" in
         "delete")
