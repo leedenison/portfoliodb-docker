@@ -75,12 +75,14 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 clean-all: clean
-	@echo "Cleaning Docker images..."
+	@echo "Cleaning Docker containers and images..."
 	cd docker && docker-compose down --rmi local --volumes --remove-orphans
 	docker rmi $(DOCKER_IMAGE_NAME):dev $(DOCKER_IMAGE_NAME):prod 2>/dev/null || true
-	@echo "Cleaning submodule..."
-	git $(GIT_SUBMODULE_FLAGS) submodule deinit -f external/portfoliodb 2>/dev/null || true
-	rm -rf external/portfoliodb
+	@echo "Removing any stale portfoliodb containers..."
+	docker rm -f portfoliodb-init 2>/dev/null || true
+	docker rm -f portfoliodb-dev 2>/dev/null || true
+	@echo "Cleaning submodule build artifacts..."
+	cd external/portfoliodb && make clean 2>/dev/null || true
 
 status:
 	@echo "=== PortfolioDB Build Status ==="

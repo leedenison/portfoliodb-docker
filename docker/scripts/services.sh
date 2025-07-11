@@ -34,7 +34,6 @@ start_services() {
     check_script "$PORTFOLIODB_SCRIPT" "PortfolioDB"
     
     # Start PostgreSQL first
-    echo "Starting PostgreSQL service..."
     "$POSTGRES_SCRIPT" start
     
     # Wait a moment for PostgreSQL to fully initialize
@@ -49,7 +48,6 @@ start_services() {
     echo "PostgreSQL is ready"
     
     # Start PortfolioDB application
-    echo "Starting PortfolioDB application..."
     "$PORTFOLIODB_SCRIPT" start
 }
 
@@ -59,13 +57,11 @@ stop_services() {
     
     # Stop PortfolioDB first (if running)
     if [ -f "$PORTFOLIODB_SCRIPT" ]; then
-        echo "Stopping PortfolioDB application..."
         "$PORTFOLIODB_SCRIPT" stop || true
     fi
     
     # Stop PostgreSQL
     if [ -f "$POSTGRES_SCRIPT" ]; then
-        echo "Stopping PostgreSQL service..."
         "$POSTGRES_SCRIPT" stop || true
     fi
 }

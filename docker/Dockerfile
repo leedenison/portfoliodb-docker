@@ -16,7 +16,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg ma
 # Install PostgreSQL and TimescaleDB dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-17 \
-    postgresql-contrib \
+    postgresql-contrib-17 \
     postgresql-common \
     postgresql-client-17 \
     wget \
