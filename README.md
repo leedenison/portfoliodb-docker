@@ -33,6 +33,7 @@ This project provides a Docker-based development environment for PortfolioDB wit
 ### Development Commands
 - `make run` - Start development environment (requires existing database)
 - `make init-db` - Initialize database only (first run)
+- `make delete-db` - Delete database data (clean slate)
 - `make reset-db` - Reset database (delete and rebuild from scratch)
 - `make stop` - Stop development service
 - `make status` - Show current build status
@@ -83,14 +84,19 @@ This project provides a Docker-based development environment for PortfolioDB wit
 
 ### Database Management
 
+- **Initialize database (first run or reinitialize):**
+  ```bash
+  make init-db
+  ```
+
+- **Delete database data (clean slate, no reinitialization):**
+  ```bash
+  make delete-db
+  ```
+
 - **Reset database (delete everything and start fresh):**
   ```bash
   make reset-db
-  ```
-
-- **Initialize database only (without starting dev service):**
-  ```bash
-  make init-db
   ```
 
 ## Ports

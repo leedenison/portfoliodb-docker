@@ -45,10 +45,15 @@ init-db: $(POSTGRES_DATA_DIR)
 	@echo "Initializing database..."
 	cd docker && docker-compose --profile init up portfoliodb-init
 
+# Delete database data (clean slate)
+delete-db: $(POSTGRES_DATA_DIR)
+	@echo "Deleting database data..."
+	DB_ACTION=delete cd docker && docker-compose --profile init up portfoliodb-init
+
 # Reset database (delete and rebuild from scratch)
 reset-db: $(POSTGRES_DATA_DIR)
 	@echo "Resetting database..."
-	RESET_DB=true cd docker && docker-compose --profile init up portfoliodb-init
+	DB_ACTION=reset cd docker && docker-compose --profile init up portfoliodb-init
 
 # Run development environment
 run: portfoliodb docker $(POSTGRES_DATA_DIR)
@@ -97,4 +102,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all portfoliodb docker prod init-db reset-db run logs watch restart stop clean clean-all status
+.PHONY: all portfoliodb docker prod init-db delete-db reset-db run logs watch restart stop clean clean-all status

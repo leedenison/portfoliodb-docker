@@ -12,7 +12,7 @@ POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_USER="${POSTGRES_USER:-portfoliodb}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-portfoliodb_dev_password}"
 POSTGRES_DB="${POSTGRES_DB:-portfoliodb}"
-RESET_DB="${RESET_DB:-false}"
+DB_ACTION="${DB_ACTION:-init}"
 
 # Database connection string
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
@@ -22,7 +22,7 @@ echo "Data directory: $POSTGRES_DATA_DIR"
 echo "Database: $POSTGRES_DB"
 echo "User: $POSTGRES_USER"
 echo "Host: $POSTGRES_HOST:$POSTGRES_PORT"
-echo "Reset DB: $RESET_DB"
+echo "DB Action: $DB_ACTION"
 echo "=========================================="
 
 # Function to check if database is initialized
@@ -36,8 +36,8 @@ is_database_initialized() {
     fi
 }
 
-# Function to initialize PostgreSQL cluster in the mounted volume
-init_postgres_cluster() {
+# Function to initialize database
+init_database() {
     echo "Initializing PostgreSQL cluster in $POSTGRES_DATA_DIR..."
     
     # Create data directory if it doesn't exist
@@ -68,6 +68,31 @@ init_postgres_cluster() {
     done
     
     echo "PostgreSQL is ready"
+}
+
+# Function to delete database data
+delete_database() {
+    echo "Deleting database data..."
+    
+    # Stop PostgreSQL if running
+    if [ -f "$POSTGRES_DATA_DIR/postmaster.pid" ]; then
+        su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR stop" || true
+    fi
+    
+    # Remove data directory
+    if [ -d "$POSTGRES_DATA_DIR" ]; then
+        echo "Removing existing data directory..."
+        rm -rf "$POSTGRES_DATA_DIR"
+    fi
+    
+    echo "Database data deleted successfully"
+}
+
+# Function to configure the database (preload TimescaleDB, create user/db, configure extension)
+configure_database() {
+    ensure_timescaledb_preload
+    create_database_and_user
+    configure_timescaledb
 }
 
 # Function to create database and user
@@ -116,40 +141,6 @@ EOSQL
     echo "TimescaleDB extension configured successfully"
 }
 
-# Function to reset database
-reset_database() {
-    echo "Resetting database..."
-    
-    # Stop PostgreSQL if running
-    if [ -f "$POSTGRES_DATA_DIR/postmaster.pid" ]; then
-        su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR stop" || true
-    fi
-    
-    # Remove data directory
-    if [ -d "$POSTGRES_DATA_DIR" ]; then
-        echo "Removing existing data directory..."
-        rm -rf "$POSTGRES_DATA_DIR"
-    fi
-    
-    # Recreate data directory
-    mkdir -p "$POSTGRES_DATA_DIR"
-    chown postgres:postgres "$POSTGRES_DATA_DIR"
-    
-    # Initialize new PostgreSQL cluster
-    echo "Initializing new PostgreSQL cluster..."
-    su postgres -c "/usr/lib/postgresql/17/bin/initdb -D $POSTGRES_DATA_DIR"
-    su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR start"
-    
-    # Wait for PostgreSQL to be ready
-    echo "Waiting for PostgreSQL to be ready..."
-    until pg_isready -h localhost -p 5432; do
-        echo "Waiting for PostgreSQL..."
-        sleep 1
-    done
-    
-    echo "Database reset completed"
-}
-
 # Function to ensure TimescaleDB is preloaded
 ensure_timescaledb_preload() {
     CONF_FILE="$POSTGRES_DATA_DIR/postgresql.conf"
@@ -170,33 +161,36 @@ ensure_timescaledb_preload() {
 main() {
     echo "Starting database initialization..."
     
-    # Check if we need to reset the database
-    if [ "$RESET_DB" = "true" ]; then
-        echo "RESET_DB is set to true, resetting database..."
-        reset_database
+    # Handle different DB_ACTION values
+    case "$DB_ACTION" in
+        "delete")
+            delete_database
+            ;;
+        "reset")
+            delete_database
+            init_database
+            configure_database
+            ;;
+        "init")
+            # Check if database is already initialized
+            if is_database_initialized; then
+                echo "Database appears to be already initialized"
+            else
+                init_database
+                configure_database
+            fi
+            ;;
+        *)
+            echo "Error: Invalid DB_ACTION value '$DB_ACTION'. Valid values are: init, delete, reset"
+            exit 1
+            ;;
+    esac
+    
+    if [ "$DB_ACTION" != "delete" ]; then
+        echo "=== Database initialization completed successfully ==="
+        echo "Database URL: $DATABASE_URL"
+        echo "TimescaleDB extension is ready for use"
     fi
-    
-    # Check if database is already initialized
-    if is_database_initialized; then
-        echo "Database appears to be already initialized"
-        init_postgres_cluster
-    else
-        echo "Database not initialized, starting fresh..."
-        init_postgres_cluster
-    fi
-    
-    # Ensure TimescaleDB is preloaded
-    ensure_timescaledb_preload
-    
-    # Create database and user
-    create_database_and_user
-    
-    # Configure TimescaleDB extension
-    configure_timescaledb
-    
-    echo "=== Database initialization completed successfully ==="
-    echo "Database URL: $DATABASE_URL"
-    echo "TimescaleDB extension is ready for use"
 }
 
 # Run main function

@@ -15,7 +15,7 @@ services:
       - POSTGRES_USER=portfoliodb
       - POSTGRES_PASSWORD=portfoliodb_dev_password
       - POSTGRES_DB=portfoliodb
-      - RESET_DB=${RESET_DB:-false}
+      - DB_ACTION=${DB_ACTION:-init}
     command: ["/opt/portfoliodb/scripts/init-db.sh"]
     profiles:
       - init
