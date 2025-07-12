@@ -5,7 +5,8 @@ FROM rust:1.81-slim AS base
 # BASE STAGE - PostgreSQL and TimescaleDB Installation
 # =============================================================================
 
-# Switch to nightly Rust until we can use 2024 edition
+# Switch to nightly Rust
+# TODO: Switch to stable when 2024 edition is available
 RUN rustup install nightly && rustup default nightly
 
 # Build arguments for user/group configuration

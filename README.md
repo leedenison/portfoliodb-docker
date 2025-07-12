@@ -31,17 +31,17 @@ This project provides a Docker-based development environment for PortfolioDB wit
 ### Database Commands
 - `make init-db` - Initialize database
 - `make delete-db` - Delete database data
-- `make reset-db` - Delete the database and rebuild
+- `make reset-db` - Run delete-db followed by init-db
 
 ### Docker Commands
-- `make run` - Start development environment with hot reloading (requires existing database)
-- `make stop` - Stop development service
-- `make logs` - View logs from development service
+- `make run` - Start development container with hot reloading (requires existing database)
+- `make stop` - Stop development container
+- `make logs` - View logs from development container
 - `make logs-watch` - View logs with continuous monitoring
 
 ### Utility Commands
 - `make clean` - Clean build artifacts
-- `make clean-all` - Clean everything including Docker images
+- `make clean-all` - Clean all artifacts (does not delete the database)
 - `make status` - Show current build status
 
 ## Development Workflow
@@ -63,7 +63,6 @@ This project provides a Docker-based development environment for PortfolioDB wit
    - Rebuild the project when changes are detected
    - Restart the gRPC server automatically
    - No manual restarts required
-
 
 ## Ports
 
