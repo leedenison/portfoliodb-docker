@@ -10,9 +10,9 @@ services:
         POSTGRES_GID: ${POSTGRES_GID:-1100}
     container_name: portfoliodb-init
     volumes:
-      - /tmp/portfoliodb/data:/var/lib/postgresql/data
+      - /tmp/portfoliodb/data:/var/lib/postgresql/17/main
     environment:
-      - POSTGRES_DATA_DIR=/var/lib/postgresql/data
+      - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
       - POSTGRES_HOST=localhost
       - POSTGRES_PORT=5432
       - POSTGRES_USER=portfoliodb
@@ -38,12 +38,12 @@ services:
       - "5432:5432"
     volumes:
       - ../external/portfoliodb:/opt/portfoliodb/src
-      - /tmp/portfoliodb/data:/var/lib/postgresql/data
+      - /tmp/portfoliodb/data:/var/lib/postgresql/17/main
       - /tmp/portfoliodb/logs/postgresql:/var/log/postgresql
     environment:
       - RUST_LOG=debug
       - DATABASE_URL=postgres://portfoliodb:portfoliodb_dev_password@localhost:5432/portfoliodb
-      - POSTGRES_DATA_DIR=/var/lib/postgresql/data
+      - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
     restart: unless-stopped
 
 volumes:
