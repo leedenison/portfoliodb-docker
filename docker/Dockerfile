@@ -5,6 +5,13 @@ FROM rust:1.81-slim AS base
 # BASE STAGE - PostgreSQL and TimescaleDB Installation
 # =============================================================================
 
+# Switch to nightly Rust until we can use 2024 edition
+RUN rustup install nightly && rustup default nightly
+
+# Build arguments for user/group configuration
+ARG POSTGRES_UID=1100
+ARG POSTGRES_GID=1100
+
 # Install required utilities for repository setup
 RUN apt-get update && apt-get install -y lsb-release wget gpg ca-certificates
 
@@ -12,6 +19,10 @@ RUN apt-get update && apt-get install -y lsb-release wget gpg ca-certificates
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg \
     && apt-key add /usr/share/keyrings/postgresql-archive-keyring.gpg
+
+# Create postgres user and group with specified UID/GID
+RUN groupadd -g $POSTGRES_GID postgres && \
+    useradd -r -u $POSTGRES_UID -g postgres -s /bin/bash postgres
 
 # Install PostgreSQL and TimescaleDB dependencies
 RUN apt-get update && apt-get install -y \

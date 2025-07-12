@@ -5,6 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: dev
+      args:
+        POSTGRES_UID: ${POSTGRES_UID:-1100}
+        POSTGRES_GID: ${POSTGRES_GID:-1100}
     container_name: portfoliodb-init
     volumes:
       - /tmp/portfoliodb/data:/var/lib/postgresql/data
@@ -26,6 +29,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: dev
+      args:
+        POSTGRES_UID: ${POSTGRES_UID:-1100}
+        POSTGRES_GID: ${POSTGRES_GID:-1100}
     container_name: portfoliodb-dev
     ports:
       - "50001:50001"

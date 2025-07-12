@@ -28,7 +28,7 @@ start_cargo_watch() {
         -w src \
         -w Cargo.toml \
         -w build.rs \
-        -x "cargo build --release && cargo run --release -- --database-url $DATABASE_URL"
+        -s "cargo build --release && cargo run --release -- --database-url $DATABASE_URL"
 }
 
 # Main script logic
