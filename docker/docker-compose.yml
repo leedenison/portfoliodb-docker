@@ -16,7 +16,7 @@ services:
       - POSTGRES_PASSWORD=portfoliodb_dev_password
       - POSTGRES_DB=portfoliodb
       - DB_ACTION=${DB_ACTION:-init}
-    command: ["/opt/portfoliodb/scripts/init-db.sh"]
+    command: [ "/opt/portfoliodb/scripts/init-db.sh" ]
     profiles:
       - init
 
@@ -31,8 +31,9 @@ services:
       - "50001:50001"
       - "5432:5432"
     volumes:
-      - ./bin/portfoliodb:/opt/portfoliodb/portfoliodb
+      - ../external/portfoliodb:/opt/portfoliodb/src
       - /tmp/portfoliodb/data:/var/lib/postgresql/data
+      - /tmp/portfoliodb/logs/postgresql:/var/log/postgresql
     environment:
       - RUST_LOG=debug
       - DATABASE_URL=postgres://portfoliodb:portfoliodb_dev_password@localhost:5432/portfoliodb
@@ -41,4 +42,4 @@ services:
 
 volumes:
   postgres_data:
-    driver: local 
+    driver: local

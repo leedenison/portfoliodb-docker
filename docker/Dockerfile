@@ -30,50 +30,51 @@ RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | gpg
     && echo "deb [signed-by=/usr/share/keyrings/timescaledb-archive-keyring.gpg] https://packagecloud.io/timescale/timescaledb/debian/ $(lsb_release -c -s) main" | tee /etc/apt/sources.list.d/timescaledb.list \
     && apt-get update \
     && apt-get install -y timescaledb-2-postgresql-17 \
+    && apt-get remove --purge -y wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Remove the default cluster and re-create it
 RUN pg_dropcluster --stop 17 main && \
     pg_createcluster 17 main
 
+WORKDIR /opt/portfoliodb
+
+RUN mkdir -p /opt/portfoliodb/etc /opt/portfoliodb/scripts /var/log/postgresql
+
+# Copy service scripts and make them executable
+COPY scripts/ /opt/portfoliodb/scripts/
+RUN chmod +x /opt/portfoliodb/scripts/*.sh
+
 # =============================================================================
 # DEVELOPMENT STAGE - Development Environment with Hot Reload
 # =============================================================================
 FROM base AS dev
 
-WORKDIR /opt/portfoliodb
+# Install build dependencies for PortfolioDB
+RUN apt-get update && apt-get install -y \
+    protobuf-compiler \
+    procps \
+    net-tools \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install debugging tools for development
-RUN apt-get update && apt-get install -y procps net-tools && rm -rf /var/lib/apt/lists/*
+# Install cargo-watch for development hot reloading
+RUN cargo install cargo-watch
 
-# Create necessary directories
-RUN mkdir -p /opt/portfoliodb/etc /opt/portfoliodb/scripts /var/log/postgresql
-
-# Copy service scripts
-COPY scripts/ /opt/portfoliodb/scripts/
-
-# Make scripts executable
-RUN chmod +x /opt/portfoliodb/scripts/*.sh
+# Create dev-specific directory
+RUN mkdir -p /opt/portfoliodb/src
 
 EXPOSE 50001 5432
 
-CMD ["/opt/portfoliodb/scripts/services.sh", "start"]
+# Use cargo-watch.sh as the main executable for dev stage
+CMD ["/opt/portfoliodb/scripts/cargo-watch.sh", "start"]
 
 # =============================================================================
 # PRODUCTION STAGE - Optimized Production Environment
 # =============================================================================
 FROM base AS prod
 
-WORKDIR /opt/portfoliodb
-
-# Create necessary directories
-RUN mkdir -p /opt/portfoliodb/etc /opt/portfoliodb/scripts /var/lib/postgresql/data /var/log/postgresql
-
-# Copy service scripts
-COPY scripts/ /opt/portfoliodb/scripts/
-
-# Make scripts executable
-RUN chmod +x /opt/portfoliodb/scripts/*.sh
+# Create prod-specific directory
+RUN mkdir -p /var/lib/postgresql/data
 
 # Copy the PortfolioDB binary
 COPY bin/portfoliodb /opt/portfoliodb/portfoliodb

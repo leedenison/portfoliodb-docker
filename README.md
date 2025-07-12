@@ -25,20 +25,18 @@ This project provides a Docker-based development environment for PortfolioDB wit
 ## Available Commands
 
 ### Build Commands
-- `make all` - Build PortfolioDB binary and production Docker image
-- `make portfoliodb` - Clone repo and build binary only
-- `make docker` - Build development Docker image
+- `make all` - Build production Docker image
+- `make dev` - Build development Docker image
 - `make prod` - Build production Docker image
 
 ### Development Commands
-- `make run` - Start development environment (requires existing database)
+- `make run` - Start development environment with hot reloading (requires existing database)
 - `make init-db` - Initialize database only (first run)
 - `make delete-db` - Delete database data (clean slate)
 - `make reset-db` - Reset database (delete and rebuild from scratch)
 - `make stop` - Stop development service
 - `make status` - Show current build status
 - `make logs` - View logs from development service
-- `make watch` - Watch for changes in PortfolioDB repo and auto-rebuild
 
 ### Utility Commands
 - `make clean` - Clean build artifacts
@@ -61,7 +59,7 @@ This project provides a Docker-based development environment for PortfolioDB wit
    ```bash
    make run
    ```
-   This starts the development container with the initialized database.
+   This starts the development container with hot reloading enabled. Source code changes will automatically trigger rebuilds and restarts.
 
 ### Regular Development
 
@@ -69,18 +67,15 @@ This project provides a Docker-based development environment for PortfolioDB wit
    ```bash
    make run
    ```
-   This starts the container with the existing database.
+   This starts the container with hot reloading enabled. Source code changes will automatically trigger rebuilds and restarts.
 
 2. **View logs (optional):**
    ```bash
    make logs
    ```
 
-3. **Watch for changes (optional):**
-   ```bash
-   make watch
-   ```
-   The binary will be automatically rebuilt and the service restarted when changes are detected.
+3. **Hot reloading:**
+   The development environment automatically watches for source code changes and rebuilds/restarts the service as needed. No additional commands required.
 
 ### Database Management
 
