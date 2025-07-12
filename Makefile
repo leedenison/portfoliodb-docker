@@ -66,11 +66,10 @@ run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR)
 	@echo "Run 'make logs' to view the container logs."
 
 logs:
-	cd docker && docker-compose logs -f
+	cd docker && docker-compose logs --tail=20
 
-watch: external/portfoliodb/Cargo.toml
-	@echo "Development mode with cargo-watch is now handled inside the Docker container."
-	@echo "Run 'make run' to start the development environment with hot reloading."
+logs-watch:
+	cd docker && docker-compose logs -f
 
 stop:
 	@echo "Stopping containers..."
@@ -109,4 +108,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all dev prod init-db delete-db reset-db run logs watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all dev prod init-db delete-db reset-db run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
