@@ -78,3 +78,14 @@ The application uses PostgreSQL 17 with TimescaleDB extensions:
 - **Password**: `portfoliodb_dev_password`
 - **Connection String**: `postgres://portfoliodb:portfoliodb_dev_password@localhost:5432/portfoliodb`
 - **TimescaleDB**: Automatically installed and configured
+
+## PostgreSQL User Configuration
+
+By default, PostgreSQL runs inside the container with UID/GID 1100:1100. This configuration can be customized at build time.
+
+To override the default UID/GID, use Docker build arguments:
+
+```bash
+# Build with custom UID/GID
+docker build --build-arg POSTGRES_UID=1000 --build-arg POSTGRES_GID=1000 -f docker/Dockerfile -t portfoliodb-dev .
+```
