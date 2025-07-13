@@ -68,6 +68,7 @@ services:
       - POSTGRES_DB=portfoliodb_test
       - DATABASE_URL=postgres://portfoliodb:portfoliodb_test_password@localhost:5432/portfoliodb_test
       - RUST_LOG=debug
+      - RUST_BACKTRACE=${RUST_BACKTRACE:-0}
     command: [ "/opt/portfoliodb/scripts/test.sh" ]
     profiles:
       - test

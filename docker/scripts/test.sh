@@ -13,6 +13,7 @@ POSTGRES_USER="${POSTGRES_USER:-portfoliodb}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-portfoliodb_test_password}"
 POSTGRES_DB="${POSTGRES_DB:-portfoliodb_test}"
 DATABASE_URL="${DATABASE_URL:-postgres://portfoliodb:portfoliodb_test_password@localhost:5432/portfoliodb_test}"
+RUST_BACKTRACE="${RUST_BACKTRACE:-0}"
 
 # Function to initialize test database
 init_test_database() {

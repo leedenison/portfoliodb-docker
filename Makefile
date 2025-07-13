@@ -10,6 +10,7 @@ GIT_SUBMODULE_FLAGS ?=
 BUILD_DIR = docker/bin
 POSTGRES_DATA_DIR = /tmp/portfoliodb/data
 POSTGRES_LOGS_DIR = /tmp/portfoliodb/logs/postgresql
+RUST_BACKTRACE ?= 0
 
 all: prod
 
@@ -60,7 +61,7 @@ reset-db: $(POSTGRES_DATA_DIR)
 # Run functional tests
 func-test:
 	@echo "Running PortfolioDB functional tests..."
-	@cd docker && docker-compose --profile test up portfoliodb-test
+	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) docker-compose --profile test up portfoliodb-test
 
 # Run tests (alias for func-test)
 test: func-test
