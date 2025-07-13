@@ -96,6 +96,7 @@ clean-images:
 	cd docker && docker-compose down --rmi local
 	docker rmi portfoliodb:dev portfoliodb:prod 2>/dev/null || true
 	docker rmi docker-portfoliodb-init:latest 2>/dev/null || true
+	docker rmi docker-portfoliodb-test:latest 2>/dev/null || true
 
 clean-submodules:
 	@echo "Cleaning submodule build artifacts..."

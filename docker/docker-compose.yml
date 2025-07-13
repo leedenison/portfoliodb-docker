@@ -58,6 +58,7 @@ services:
     container_name: portfoliodb-test
     volumes:
       - ../external/portfoliodb:/opt/portfoliodb/src
+      - /tmp/portfoliodb/logs/test:/tmp/portfoliodb/logs/test
     environment:
       - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
       - POSTGRES_HOST=localhost

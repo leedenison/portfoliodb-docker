@@ -58,9 +58,9 @@ COPY scripts/ /opt/portfoliodb/scripts/
 RUN chmod +x /opt/portfoliodb/scripts/*.sh
 
 # =============================================================================
-# DEVELOPMENT STAGE - Development Environment with Hot Reload
+# DEPS STAGE - External Dependencies and Build Tools
 # =============================================================================
-FROM base AS dev
+FROM base AS deps
 
 # Install build dependencies for PortfolioDB
 RUN apt-get update && apt-get install -y \
@@ -72,8 +72,16 @@ RUN apt-get update && apt-get install -y \
 # Install cargo-watch for development hot reloading
 RUN cargo install cargo-watch
 
-# Create dev-specific directory
+# =============================================================================
+# DEVELOPMENT STAGE - Development Environment with Hot Reload
+# =============================================================================
+FROM deps AS dev
+
+# Create src mount directory
 RUN mkdir -p /opt/portfoliodb/src
+
+# Create test logs directory
+RUN mkdir -p /tmp/portfoliodb/logs/test
 
 EXPOSE 50001 5432
 

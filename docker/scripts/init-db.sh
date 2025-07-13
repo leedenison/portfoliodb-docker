@@ -152,6 +152,21 @@ ensure_timescaledb_preload() {
     fi
 }
 
+# Function to run all SQL migrations in the migrations directory
+run_migrations() {
+    echo "Applying SQL migrations..."
+    MIGRATIONS_DIR="/opt/portfoliodb/src/migrations"
+    if [ -d "$MIGRATIONS_DIR" ]; then
+        for migration in $(ls "$MIGRATIONS_DIR"/*.sql | sort); do
+            echo "Applying migration: $migration"
+            psql "$DATABASE_URL" -f "$migration"
+        done
+    else
+        echo "Migrations directory not found: $MIGRATIONS_DIR"
+    fi
+    echo "All migrations applied."
+}
+
 # Main initialization logic
 main() {
     # Handle different DB_ACTION values
@@ -163,6 +178,7 @@ main() {
             delete_database
             init_database
             configure_database
+            run_migrations
             ;;
         "init")
             # Check if database is already initialized
@@ -171,6 +187,7 @@ main() {
             else
                 init_database
                 configure_database
+                run_migrations
             fi
             ;;
         *)
@@ -178,12 +195,6 @@ main() {
             exit 1
             ;;
     esac
-    
-    if [ "$DB_ACTION" != "delete" ]; then
-        echo "=== Database initialization completed successfully ==="
-        echo "Database URL: $DATABASE_URL"
-        echo "TimescaleDB extension is ready for use"
-    fi
 }
 
 # Run main function
