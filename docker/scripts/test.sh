@@ -83,7 +83,7 @@ run_tests() {
     # Build test arguments
     build_test_args
     
-    if cargo test -- --nocapture $TEST_FILES_ARGS; then
+    if cargo test $TEST_FILES_ARGS -- --nocapture ; then
         echo "All cargo tests passed ✓"
     else
         echo "cargo tests failed ✗"

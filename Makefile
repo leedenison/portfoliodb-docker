@@ -61,7 +61,7 @@ reset-db: $(POSTGRES_DATA_DIR)
 # Run functional tests
 func-test:
 	@echo "Running PortfolioDB functional tests..."
-	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) TEST_FILES="$(TEST_FILES)" docker-compose --profile test up portfoliodb-test
+	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) TEST_FILES="database" docker-compose --profile test up portfoliodb-test
 
 # Run tests (alias for func-test)
 test: func-test
