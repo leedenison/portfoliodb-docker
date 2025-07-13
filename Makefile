@@ -57,10 +57,13 @@ delete-db: $(POSTGRES_DATA_DIR)
 reset-db: $(POSTGRES_DATA_DIR)
 	cd docker && DB_ACTION=reset docker-compose --profile init up portfoliodb-init
 
-# Run tests
-test:
-	@echo "Running PortfolioDB tests..."
+# Run functional tests
+func-test:
+	@echo "Running PortfolioDB functional tests..."
 	@cd docker && docker-compose --profile test up portfoliodb-test
+
+# Run tests (alias for func-test)
+test: func-test
 
 # Run development environment
 run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR)
@@ -115,4 +118,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all dev prod init-db delete-db reset-db test run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all dev prod init-db delete-db reset-db test func-test run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status

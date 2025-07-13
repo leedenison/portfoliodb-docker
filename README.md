@@ -33,6 +33,10 @@ This project provides a Docker-based development environment for PortfolioDB wit
 - `make delete-db` - Delete database data
 - `make reset-db` - Run delete-db followed by init-db
 
+### Test Commands
+- `make test` - Run all tests
+- `make func-test` - Run functional tests
+
 ### Docker Commands
 - `make run` - Start development container with hot reloading (requires existing database)
 - `make stop` - Stop development container
