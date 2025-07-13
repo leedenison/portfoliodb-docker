@@ -60,7 +60,7 @@ reset-db: $(POSTGRES_DATA_DIR)
 # Run tests
 test:
 	@echo "Running PortfolioDB tests..."
-	@cd docker && docker-compose --profile test up --build --quiet-pull portfoliodb-test 2>&1 | sed -n '/=== PortfolioDB Test Suite ===/,/Test suite finished/p' || true
+	@cd docker && docker-compose --profile test up portfoliodb-test
 
 # Run development environment
 run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR)
