@@ -61,10 +61,16 @@ reset-db: $(POSTGRES_DATA_DIR)
 # Run functional tests
 func-test:
 	@echo "Running PortfolioDB functional tests..."
-	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) docker-compose --profile test up portfoliodb-test
+	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) TEST_FILES="$(TEST_FILES)" docker-compose --profile test up portfoliodb-test
 
 # Run tests (alias for func-test)
 test: func-test
+
+# Run specific test files
+# Usage: make test-files FILES="test_file1 test_file2"
+test-files:
+	@echo "Running specific test files..."
+	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) TEST_FILES="$(FILES)" docker-compose --profile test up portfoliodb-test
 
 # Run development environment
 run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR)
@@ -119,4 +125,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all dev prod init-db delete-db reset-db test func-test run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all dev prod init-db delete-db reset-db test func-test test-files run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status

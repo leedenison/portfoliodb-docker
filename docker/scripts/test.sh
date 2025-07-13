@@ -15,6 +15,25 @@ POSTGRES_DB="${POSTGRES_DB:-portfoliodb_test}"
 DATABASE_URL="${DATABASE_URL:-postgres://portfoliodb:portfoliodb_test_password@localhost:5432/portfoliodb_test}"
 RUST_BACKTRACE="${RUST_BACKTRACE:-0}"
 
+# Test file filtering
+# TEST_FILES: Space-separated list of test file names (without .rs extension)
+# Example: TEST_FILES="auth_tests user_tests"
+TEST_FILES="${TEST_FILES:-}"
+TEST_FILES_ARGS=""
+
+# Function to build test file arguments
+build_test_args() {
+    if [ -n "$TEST_FILES" ]; then
+        echo "Running tests for specific files: $TEST_FILES"
+        # Convert space-separated list to cargo test arguments
+        for file in $TEST_FILES; do
+            TEST_FILES_ARGS="$TEST_FILES_ARGS --test $file"
+        done
+    else
+        echo "Running all tests"
+    fi
+}
+
 # Function to initialize test database
 init_test_database() {
     # Set DB_ACTION to reset for the init-db.sh script to ensure clean state
@@ -61,11 +80,13 @@ run_tests() {
         return 1
     fi
     
-    # Run cargo tests
-    if cargo test; then
-        echo "✓ All tests passed"
+    # Build test arguments
+    build_test_args
+    
+    if cargo test -- --nocapture $TEST_FILES_ARGS; then
+        echo "All cargo tests passed ✓"
     else
-        echo "✗ Tests failed"
+        echo "cargo tests failed ✗"
         return 1
     fi
     
