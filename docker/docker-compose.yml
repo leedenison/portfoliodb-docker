@@ -46,6 +46,31 @@ services:
       - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
     restart: unless-stopped
 
+  # Test service
+  portfoliodb-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        POSTGRES_UID: ${POSTGRES_UID:-1100}
+        POSTGRES_GID: ${POSTGRES_GID:-1100}
+    container_name: portfoliodb-test
+    volumes:
+      - ../external/portfoliodb:/opt/portfoliodb/src
+    environment:
+      - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
+      - POSTGRES_HOST=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=portfoliodb
+      - POSTGRES_PASSWORD=portfoliodb_test_password
+      - POSTGRES_DB=portfoliodb_test
+      - DATABASE_URL=postgres://portfoliodb:portfoliodb_test_password@localhost:5432/portfoliodb_test
+      - RUST_LOG=debug
+    command: [ "/opt/portfoliodb/scripts/test.sh" ]
+    profiles:
+      - test
+
 volumes:
   postgres_data:
     driver: local

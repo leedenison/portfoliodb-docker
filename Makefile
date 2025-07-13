@@ -57,6 +57,11 @@ delete-db: $(POSTGRES_DATA_DIR)
 reset-db: $(POSTGRES_DATA_DIR)
 	cd docker && DB_ACTION=reset docker-compose --profile init up portfoliodb-init
 
+# Run tests
+test:
+	@echo "Running PortfolioDB tests..."
+	cd docker && docker-compose --profile test up --build portfoliodb-test
+
 # Run development environment
 run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR)
 	@echo "Starting development environment with cargo-watch..."
@@ -84,6 +89,7 @@ clean-containers:
 	cd docker && docker-compose down --volumes --remove-orphans
 	docker rm -f portfoliodb-init 2>/dev/null || true
 	docker rm -f portfoliodb-dev 2>/dev/null || true
+	docker rm -f portfoliodb-test 2>/dev/null || true
 
 clean-images:
 	@echo "Cleaning Docker images..."
@@ -108,4 +114,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all dev prod init-db delete-db reset-db run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all dev prod init-db delete-db reset-db test run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
