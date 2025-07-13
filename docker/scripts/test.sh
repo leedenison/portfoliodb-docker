@@ -14,34 +14,22 @@ POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-portfoliodb_test_password}"
 POSTGRES_DB="${POSTGRES_DB:-portfoliodb_test}"
 DATABASE_URL="${DATABASE_URL:-postgres://portfoliodb:portfoliodb_test_password@localhost:5432/portfoliodb_test}"
 
-echo "=== PortfolioDB Test Suite ==="
-echo "Test database: $POSTGRES_DB"
-echo "Database URL: $DATABASE_URL"
-echo "Data directory: $POSTGRES_DATA_DIR"
-echo "================================"
-
 # Function to initialize test database
 init_test_database() {
-    echo "Initializing test database..."
-    
-    # Set DB_ACTION to init for the init-db.sh script
-    export DB_ACTION=init
+    # Set DB_ACTION to reset for the init-db.sh script to ensure clean state
+    export DB_ACTION=reset
     
     # Run the database initialization script
-    /opt/portfoliodb/scripts/init-db.sh
-    
-    echo "Test database initialized successfully"
+    if ! /opt/portfoliodb/scripts/init-db.sh > /dev/null 2>&1; then
+        echo "✗ Database initialization failed"
+        exit 1
+    fi
 }
 
 # Function to run tests
 run_tests() {
-    echo "Running tests..."
-    
     # Change to the source directory
     cd /opt/portfoliodb/src
-    
-    # Run a simple "Hello World" test to verify the setup works
-    echo "Running Hello World test..."
     
     # Test 1: Check if we can connect to the database
     echo "Test 1: Database connection test"
@@ -84,37 +72,31 @@ run_tests() {
 
 # Function to clean up test database
 cleanup_test_database() {
-    echo "Cleaning up test database..."
-    
     # Set DB_ACTION to delete for the init-db.sh script
     export DB_ACTION=delete
     
     # Run the database cleanup script
-    /opt/portfoliodb/scripts/init-db.sh
-    
-    echo "Test database cleaned up successfully"
+    if ! /opt/portfoliodb/scripts/init-db.sh > /dev/null 2>&1; then
+        echo "✗ Database cleanup failed"
+        exit 1
+    fi
 }
 
 # Main test workflow
 main() {
-    echo "Starting PortfolioDB test suite..."
-    
     # Initialize the test database
     init_test_database
     
     # Run the tests
     if run_tests; then
-        echo "Test suite completed successfully"
         exit_code=0
     else
-        echo "Test suite failed"
         exit_code=1
     fi
     
     # Clean up the test database
     cleanup_test_database
     
-    echo "Test suite finished with exit code: $exit_code"
     exit $exit_code
 }
 
