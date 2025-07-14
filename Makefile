@@ -14,6 +14,46 @@ RUST_BACKTRACE ?= 0
 
 all: prod
 
+help:
+	@echo "Main Targets:"
+	@echo "  all          - Build production and dev images (default)"
+	@echo "  prod         - Build production Docker image"
+	@echo "  dev          - Build development Docker image"
+	@echo "  portfoliodb  - Build PortfolioDB binary only"
+	@echo ""
+	@echo "Database Management:"
+	@echo "  init-db      - Initialize dev database"
+	@echo "  delete-db    - Delete dev database"
+	@echo "  reset-db     - Reset dev database (delete-db then init-db)"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test         - Run all tests"
+	@echo "  func-test    - Run functional tests (runs in a dedicated container)"
+	@echo ""
+	@echo "Development:"
+	@echo "  run          - Start dev environment with hot reloading"
+	@echo "  logs         - View dev container logs"
+	@echo "  logs-watch   - Watch dev container logs in real-time"
+	@echo "  stop         - Stop dev containers"
+	@echo ""
+	@echo "Cleaning:"
+	@echo "  clean        - Clean build artifacts"
+	@echo "  clean-containers - Clean Docker containers"
+	@echo "  clean-images - Clean Docker images"
+	@echo "  clean-all    - Clean everything"
+	@echo ""
+	@echo "Information:"
+	@echo "  status       - Show build status"
+	@echo "  help         - Show this help message"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make dev     - Build development image"
+	@echo "  make init-db - Initialize database"
+	@echo "  make run     - Start development environment"
+	@echo "  make logs-watch - Watch container logs"
+	@echo "  make stop - Stop all containers"
+	@echo "  make clean-all - Clean everything"
+	
 # Ensure PostgreSQL data directory exists
 $(POSTGRES_DATA_DIR):
 	@echo "Creating PostgreSQL data directory: $(POSTGRES_DATA_DIR)"
@@ -125,4 +165,4 @@ status:
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all dev prod init-db delete-db reset-db test func-test test-files run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all help dev prod init-db delete-db reset-db test func-test test-files run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
