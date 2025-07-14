@@ -3,7 +3,7 @@
 # PostgreSQL service script for PortfolioDB
 # Usage: postgres.sh {start|stop|status|restart}
 
-POSTGRES_DATA_DIR="/var/lib/postgresql/data"
+POSTGRES_DATA_DIR="${POSTGRES_DATA_DIR:-/var/lib/postgresql/17/main}"
 POSTGRES_LOG_DIR="/var/log/postgresql"
 POSTGRES_CLUSTER="17 main"
 
