@@ -1,3 +1,4 @@
 [submodule "external/portfoliodb"]
 	path = external/portfoliodb
 	url = git@github.com:leedenison/portfoliodb.git
+  branch = main
