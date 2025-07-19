@@ -10,6 +10,7 @@ services:
         POSTGRES_GID: ${POSTGRES_GID:-1100}
     container_name: portfoliodb-init
     volumes:
+      - ../external/portfoliodb:/opt/portfoliodb/src
       - /tmp/portfoliodb/data:/var/lib/postgresql/17/main
     environment:
       - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
