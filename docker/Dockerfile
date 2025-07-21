@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-contrib-17 \
     postgresql-common \
     postgresql-client-17 \
+    postgresql-17-cron \
     wget \
     gnupg2 \
     lsb-release \

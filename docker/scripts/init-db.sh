@@ -83,11 +83,12 @@ delete_database() {
     echo "Database data deleted successfully"
 }
 
-# Function to configure the database (preload TimescaleDB, create user/db, configure extension)
+# Function to configure the database (preload extensions, create user/db, configure extensions)
 configure_database() {
-    ensure_timescaledb_preload
+    ensure_extensions_preload
     create_database_and_user
     configure_timescaledb
+    configure_pg_cron
 }
 
 # Function to create database and user
@@ -136,20 +137,65 @@ EOSQL
     echo "TimescaleDB extension configured successfully"
 }
 
-# Function to ensure TimescaleDB is preloaded
-ensure_timescaledb_preload() {
+# Function to configure pg_cron extension
+configure_pg_cron() {
+    echo "Configuring pg_cron extension..."
+    
+    CONF_FILE="$POSTGRES_DATA_DIR/postgresql.conf"
+    if grep -q "^cron.database_name" "$CONF_FILE"; then
+        echo "Setting cron.database_name to '$POSTGRES_DB'"
+        sed -i "s/^cron.database_name = '\([^']*\)'/cron.database_name = '$POSTGRES_DB'/" "$CONF_FILE"
+    else
+        echo "Adding 'cron.database_name = '$POSTGRES_DB'' to $CONF_FILE"
+        echo "cron.database_name = '$POSTGRES_DB'" >> "$CONF_FILE"
+    fi
+    
+    # Restart cluster to apply changes
+    su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR restart"
+    
+    # Connect to the database and configure pg_cron as postgres superuser
+    su postgres -c "psql -d $POSTGRES_DB" <<-EOSQL
+        -- Create the pg_cron extension
+        CREATE EXTENSION IF NOT EXISTS pg_cron;
+        
+        -- Grant permissions to portfoliodb user for cron schema
+        GRANT USAGE ON SCHEMA cron TO $POSTGRES_USER;
+        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO $POSTGRES_USER;
+        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA cron TO $POSTGRES_USER;
+        GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA cron TO $POSTGRES_USER;
+        
+        -- Set default privileges for future objects in cron schema
+        ALTER DEFAULT PRIVILEGES IN SCHEMA cron GRANT ALL ON TABLES TO $POSTGRES_USER;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA cron GRANT ALL ON SEQUENCES TO $POSTGRES_USER;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA cron GRANT ALL ON FUNCTIONS TO $POSTGRES_USER;
+        
+        -- Verify the extension is installed
+        SELECT default_version, installed_version 
+        FROM pg_available_extensions 
+        WHERE name = 'pg_cron';
+EOSQL
+    
+    echo "pg_cron extension configured successfully"
+}
+
+# Function to ensure TimescaleDB and pg_cron are preloaded
+ensure_extensions_preload() {
     CONF_FILE="$POSTGRES_DATA_DIR/postgresql.conf"
     if [ ! -f "$CONF_FILE" ]; then
         echo "PostgreSQL configuration file not found, will be created during initialization"
         return
     fi
     
-    if ! grep -q "^shared_preload_libraries.*timescaledb" "$CONF_FILE"; then
-        echo "Adding 'shared_preload_libraries = 'timescaledb'' to $CONF_FILE"
-        echo "shared_preload_libraries = 'timescaledb'" >> "$CONF_FILE"
-        # Restart cluster to apply changes
-        su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR restart"
+    if grep -q "^shared_preload_libraries" "$CONF_FILE"; then
+        echo "Setting shared_preload_libraries to 'timescaledb,pg_cron'"
+        sed -i "s/^shared_preload_libraries = '\([^']*\)'/shared_preload_libraries = 'timescaledb,pg_cron'/" "$CONF_FILE"
+    else
+        echo "Adding 'shared_preload_libraries = 'timescaledb,pg_cron'' to $CONF_FILE"
+        echo "shared_preload_libraries = 'timescaledb,pg_cron'" >> "$CONF_FILE"
     fi
+    
+    # Restart cluster to apply changes
+    su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR restart"
 }
 
 # Function to run all SQL migrations in the migrations directory

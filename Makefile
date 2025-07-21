@@ -137,20 +137,20 @@ clean:
 clean-containers:
 	@echo "Cleaning Docker containers..."
 	cd docker && docker-compose down --volumes --remove-orphans
-	docker rm -f portfoliodb-init 2>/dev/null || true
-	docker rm -f portfoliodb-dev 2>/dev/null || true
-	docker rm -f portfoliodb-test 2>/dev/null || true
+	docker rm -f portfoliodb-init || true
+	docker rm -f portfoliodb-dev || true
+	docker rm -f portfoliodb-test || true
 
 clean-images:
 	@echo "Cleaning Docker images..."
 	cd docker && docker-compose down --rmi local
-	docker rmi portfoliodb:dev portfoliodb:prod 2>/dev/null || true
-	docker rmi docker-portfoliodb-init:latest 2>/dev/null || true
-	docker rmi docker-portfoliodb-test:latest 2>/dev/null || true
+	docker rmi portfoliodb:dev portfoliodb:prod || true
+	docker rmi docker-portfoliodb-init:latest || true
+	docker rmi docker-portfoliodb-test:latest || true
 
 clean-submodules:
 	@echo "Cleaning submodule build artifacts..."
-	cd external/portfoliodb && make clean 2>/dev/null || true
+	cd external/portfoliodb && cargo clean
 
 clean-all: clean clean-containers clean-images clean-submodules
 
