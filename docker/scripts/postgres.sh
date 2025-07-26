@@ -3,16 +3,11 @@
 # PostgreSQL service script for PortfolioDB
 # Usage: postgres.sh {start|stop|status|restart}
 
-POSTGRES_DATA_DIR="${POSTGRES_DATA_DIR:-/var/lib/postgresql/17/main}"
-POSTGRES_LOG_DIR="/var/log/postgresql"
 POSTGRES_CLUSTER="17 main"
 
 # Function to start PostgreSQL
 start_postgres() {
     echo "Starting PostgreSQL..."
-    
-    # Create log directory if it doesn't exist
-    mkdir -p "$POSTGRES_LOG_DIR"
     
     # Start PostgreSQL cluster
     pg_ctlcluster 17 main start

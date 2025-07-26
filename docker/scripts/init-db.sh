@@ -1,31 +1,35 @@
 #!/bin/bash
 
 # Database initialization script for PortfolioDB
-# This script initializes the database with TimescaleDB extension and handles reset functionality
 
-set -e  # Exit on any error
+set -e
 
-# Environment variables from docker-compose.yml
 POSTGRES_DATA_DIR="${POSTGRES_DATA_DIR:-/var/lib/postgresql/17/main}"
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_USER="${POSTGRES_USER:-portfoliodb}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-portfoliodb_dev_password}"
+POSTGRES_USER="${POSTGRES_USER:-dev}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dev}"
+POSTGRES_SUPERUSER="${POSTGRES_SUPERUSER:-portfoliodb}"
+POSTGRES_SUPERUSER_PASSWORD="${POSTGRES_SUPERUSER_PASSWORD:-portfoliodb}"
 POSTGRES_DB="${POSTGRES_DB:-portfoliodb}"
 DB_ACTION="${DB_ACTION:-init}"
 
-# Database connection string
+# Extract cluster name from data directory path
+CLUSTER_NAME=$(basename "$POSTGRES_DATA_DIR")
+POSTGRES_VERSION="17"
+
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
 
 echo "=== PortfolioDB Database Initialization ==="
 echo "Data directory: $POSTGRES_DATA_DIR"
+echo "Cluster name: $CLUSTER_NAME"
+echo "PostgreSQL version: $POSTGRES_VERSION"
 echo "Database: $POSTGRES_DB"
 echo "User: $POSTGRES_USER"
 echo "Host: $POSTGRES_HOST:$POSTGRES_PORT"
 echo "DB Action: $DB_ACTION"
 echo "=========================================="
 
-# Function to check if database is initialized
 is_database_initialized() {
     if [ -d "$POSTGRES_DATA_DIR" ] && [ "$(ls -A "$POSTGRES_DATA_DIR" 2>/dev/null)" ]; then
         echo "Database directory exists and contains data"
@@ -36,29 +40,18 @@ is_database_initialized() {
     fi
 }
 
-# Function to initialize database
 init_database() {
     echo "Initializing PostgreSQL cluster in $POSTGRES_DATA_DIR..."
-    
-    # Create data directory if it doesn't exist
-    mkdir -p "$POSTGRES_DATA_DIR"
-    chown postgres:postgres "$POSTGRES_DATA_DIR"
     
     # Check if cluster already exists in the data directory
     if [ -f "$POSTGRES_DATA_DIR/PG_VERSION" ]; then
         echo "PostgreSQL cluster already exists in $POSTGRES_DATA_DIR"
-        # Start the cluster using the custom data directory
-        su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR start" || {
-            echo "Starting existing PostgreSQL cluster..."
-        }
     else
         echo "Creating new PostgreSQL cluster in $POSTGRES_DATA_DIR"
-        # Initialize new cluster in the mounted volume
-        su postgres -c "/usr/lib/postgresql/17/bin/initdb -D $POSTGRES_DATA_DIR --encoding=UTF8 --locale=C"
-        
-        # Start the cluster
-        su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR start"
+        pg_createcluster $POSTGRES_VERSION $CLUSTER_NAME -d "$POSTGRES_DATA_DIR" --encoding=UTF8 --locale=C
     fi
+    
+    pg_ctlcluster $POSTGRES_VERSION $CLUSTER_NAME start
     
     # Wait for PostgreSQL to be ready
     echo "Waiting for PostgreSQL to be ready..."
@@ -74,116 +67,33 @@ init_database() {
 delete_database() {
     echo "Deleting database data..."
     
-    # Remove data directory
-    if [ -d "$POSTGRES_DATA_DIR" ]; then
-        echo "Removing existing data directory..."
-        rm -rf "$POSTGRES_DATA_DIR"/*
-    fi
-    
-    echo "Database data deleted successfully"
-}
-
-# Function to configure the database (preload extensions, create user/db, configure extensions)
-configure_database() {
-    ensure_extensions_preload
-    create_database_and_user
-    configure_timescaledb
-    configure_pg_cron
-}
-
-# Function to create database and user
-create_database_and_user() {
-    echo "Creating database and user..."
-    
-    # Set up postgres superuser password if not already set
-    if [ -z "$POSTGRES_SUPERUSER_PASSWORD" ]; then
-        export POSTGRES_SUPERUSER_PASSWORD="postgres_superuser_password"
-        echo "Setting postgres superuser password..."
-        su postgres -c "psql -c \"ALTER USER postgres PASSWORD '$POSTGRES_SUPERUSER_PASSWORD';\""
-    fi
-    
-    # Create user if it doesn't exist
-    su postgres -c "psql -c \"SELECT 1 FROM pg_roles WHERE rolname='$POSTGRES_USER';\"" | grep -q 1 || {
-        echo "Creating user $POSTGRES_USER..."
-        su postgres -c "psql -c \"CREATE USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';\""
-    }
-    
-    # Create database if it doesn't exist
-    su postgres -c "psql -lqt" | cut -d \| -f 1 | grep -qw "$POSTGRES_DB" || {
-        echo "Creating database $POSTGRES_DB..."
-        su postgres -c "psql -c \"CREATE DATABASE $POSTGRES_DB OWNER $POSTGRES_USER;\""
-    }
-    
-    # Grant privileges
-    su postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;\""
-    su postgres -c "psql -c \"GRANT ALL ON SCHEMA public TO $POSTGRES_USER;\""
-}
-
-# Function to configure TimescaleDB extension
-configure_timescaledb() {
-    echo "Configuring TimescaleDB extension..."
-    
-    # Connect to the database and configure TimescaleDB as postgres superuser
-    su postgres -c "psql -d $POSTGRES_DB" <<-EOSQL
-        -- Create the TimescaleDB extension
-        CREATE EXTENSION IF NOT EXISTS timescaledb;
-        
-        -- Verify the extension is installed
-        SELECT default_version, installed_version 
-        FROM pg_available_extensions 
-        WHERE name = 'timescaledb';
-EOSQL
-    
-    echo "TimescaleDB extension configured successfully"
-}
-
-# Function to configure pg_cron extension
-configure_pg_cron() {
-    echo "Configuring pg_cron extension..."
-    
-    CONF_FILE="$POSTGRES_DATA_DIR/postgresql.conf"
-    if grep -q "^cron.database_name" "$CONF_FILE"; then
-        echo "Setting cron.database_name to '$POSTGRES_DB'"
-        sed -i "s/^cron.database_name = '\([^']*\)'/cron.database_name = '$POSTGRES_DB'/" "$CONF_FILE"
+    if pg_lsclusters | grep -q "$POSTGRES_VERSION/$CLUSTER_NAME"; then
+        echo "Dropping PostgreSQL cluster..."
+        pg_dropcluster $POSTGRES_VERSION $CLUSTER_NAME
+        echo "PostgreSQL cluster dropped"
     else
-        echo "Adding 'cron.database_name = '$POSTGRES_DB'' to $CONF_FILE"
-        echo "cron.database_name = '$POSTGRES_DB'" >> "$CONF_FILE"
+        echo "PostgreSQL cluster does not exist"
     fi
-    
-    # Restart cluster to apply changes
-    su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR restart"
-    
-    # Connect to the database and configure pg_cron as postgres superuser
-    su postgres -c "psql -d $POSTGRES_DB" <<-EOSQL
-        -- Create the pg_cron extension
-        CREATE EXTENSION IF NOT EXISTS pg_cron;
-        
-        -- Grant permissions to portfoliodb user for cron schema
-        GRANT USAGE ON SCHEMA cron TO $POSTGRES_USER;
-        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO $POSTGRES_USER;
-        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA cron TO $POSTGRES_USER;
-        GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA cron TO $POSTGRES_USER;
-        
-        -- Set default privileges for future objects in cron schema
-        ALTER DEFAULT PRIVILEGES IN SCHEMA cron GRANT ALL ON TABLES TO $POSTGRES_USER;
-        ALTER DEFAULT PRIVILEGES IN SCHEMA cron GRANT ALL ON SEQUENCES TO $POSTGRES_USER;
-        ALTER DEFAULT PRIVILEGES IN SCHEMA cron GRANT ALL ON FUNCTIONS TO $POSTGRES_USER;
-        
-        -- Verify the extension is installed
-        SELECT default_version, installed_version 
-        FROM pg_available_extensions 
-        WHERE name = 'pg_cron';
-EOSQL
-    
-    echo "pg_cron extension configured successfully"
+}
+
+configure_database() {
+    echo "Starting database configuration..."
+    su postgres -c "/opt/portfoliodb/scripts/configure-postgres.sh"
+    echo "Database configuration completed"
+}
+
+run_migrations() {
+    echo "Starting database migrations..."
+    su postgres -c "/opt/portfoliodb/scripts/run-migrations.sh"
+    echo "Database migrations completed"
 }
 
 # Function to ensure TimescaleDB and pg_cron are preloaded
 ensure_extensions_preload() {
-    CONF_FILE="$POSTGRES_DATA_DIR/postgresql.conf"
+    CONF_FILE="/etc/postgresql/17/main/postgresql.conf"
     if [ ! -f "$CONF_FILE" ]; then
-        echo "PostgreSQL configuration file not found, will be created during initialization"
-        return
+        echo "PostgreSQL configuration file not found"
+        exit 1
     fi
     
     if grep -q "^shared_preload_libraries" "$CONF_FILE"; then
@@ -194,24 +104,17 @@ ensure_extensions_preload() {
         echo "shared_preload_libraries = 'timescaledb,pg_cron'" >> "$CONF_FILE"
     fi
     
+    # Add cron.database_name setting for pg_cron
+    if ! grep -q "^cron\.database_name" "$CONF_FILE"; then
+        echo "Adding 'cron.database_name = '$POSTGRES_DB'' to $CONF_FILE"
+        echo "cron.database_name = '$POSTGRES_DB'" >> "$CONF_FILE"
+    fi
+    
     # Restart cluster to apply changes
-    su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D $POSTGRES_DATA_DIR restart"
+    pg_ctlcluster $POSTGRES_VERSION $CLUSTER_NAME restart
 }
 
-# Function to run all SQL migrations in the migrations directory
-run_migrations() {
-    echo "Applying SQL migrations..."
-    MIGRATIONS_DIR="/opt/portfoliodb/src/migrations"
-    if [ -d "$MIGRATIONS_DIR" ]; then
-        for migration in $(ls "$MIGRATIONS_DIR"/*.sql | sort); do
-            echo "Applying migration: $migration"
-            psql "$DATABASE_URL" -f "$migration"
-        done
-    else
-        echo "Migrations directory not found: $MIGRATIONS_DIR"
-    fi
-    echo "All migrations applied."
-}
+
 
 # Main initialization logic
 main() {
@@ -223,6 +126,7 @@ main() {
         "reset")
             delete_database
             init_database
+            ensure_extensions_preload
             configure_database
             run_migrations
             ;;
@@ -232,6 +136,7 @@ main() {
                 echo "Database appears to be already initialized"
             else
                 init_database
+                ensure_extensions_preload
                 configure_database
                 run_migrations
             fi

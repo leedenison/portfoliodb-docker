@@ -1,5 +1,6 @@
 # Build artifacts
 docker/bin/
+run/
 
 # Docker artifacts
 docker-compose.override.yml

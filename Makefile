@@ -6,18 +6,27 @@ ifneq (,$(wildcard .env))
     export
 endif
 
-GIT_SUBMODULE_FLAGS ?=
-BUILD_DIR = docker/bin
-POSTGRES_DATA_DIR = /tmp/portfoliodb/data
-POSTGRES_LOGS_DIR = /tmp/portfoliodb/logs/postgresql
-RUST_BACKTRACE ?= 0
+export UID ?= $(shell id -u)
+export GID ?= $(shell id -g)
+
+export GIT_SUBMODULE_FLAGS ?=
+export RUST_BACKTRACE ?= 0
+
+export PROJECT_DIR ?= $(CURDIR)
+export PORTFOLIODB_REPO_DIR = $(PROJECT_DIR)/external/portfoliodb
+export PORTFOLIODB_BUILD_DIR = $(PORTFOLIODB_REPO_DIR)/target/release
+
+export POSTGRES_DATA_DIR = $(PROJECT_DIR)/run/postgres/data
+export POSTGRES_LOGS_DIR = $(PROJECT_DIR)/run/postgres/logs
+export POSTGRES_ETC_DIR = $(PROJECT_DIR)/run/postgres/etc
+
+export POSTGRES_TEST_LOGS_DIR = $(PROJECT_DIR)/run/test/logs/postgres
 
 all: prod
 
 help:
 	@echo "Main Targets:"
 	@echo "  all          - Build production and dev images (default)"
-	@echo "  prod         - Build production Docker image"
 	@echo "  dev          - Build development Docker image"
 	@echo "  portfoliodb  - Build PortfolioDB binary only"
 	@echo ""
@@ -64,64 +73,62 @@ $(POSTGRES_LOGS_DIR):
 	@echo "Creating PostgreSQL logs directory: $(POSTGRES_LOGS_DIR)"
 	@mkdir -p $(POSTGRES_LOGS_DIR)
 
+# Ensure PostgreSQL etc directory exists
+$(POSTGRES_ETC_DIR):
+	@echo "Creating PostgreSQL etc directory: $(POSTGRES_ETC_DIR)"
+	@mkdir -p $(POSTGRES_ETC_DIR)
+
+# Ensure PostgreSQL test logs directory exists
+$(POSTGRES_TEST_LOGS_DIR):
+	@echo "Creating PostgreSQL test logs directory: $(POSTGRES_TEST_LOGS_DIR)"
+	@mkdir -p $(POSTGRES_TEST_LOGS_DIR)
+
 # Initialize and update git submodule
-external/portfoliodb/Cargo.toml:
+$(PORTFOLIODB_REPO_DIR)/Cargo.toml:
 	@echo "Initializing and updating PortfolioDB submodule..."
-	git $(GIT_SUBMODULE_FLAGS) submodule update --init --recursive
+	git submodule update --init --recursive
 
-$(BUILD_DIR)/portfoliodb: external/portfoliodb/Cargo.toml
+$(PORTFOLIODB_BUILD_DIR)/portfoliodb: $(PORTFOLIODB_REPO_DIR)/Cargo.toml
 	@echo "Building PortfolioDB binary..."
-	@mkdir -p $(BUILD_DIR)
-	(cd external/portfoliodb && cargo build --release) && cp external/portfoliodb/target/release/portfoliodb $(BUILD_DIR)/portfoliodb
+	(cd $(PORTFOLIODB_REPO_DIR) && cargo build --release) && cp $(PORTFOLIODB_BUILD_DIR)/portfoliodb $(PORTFOLIODB_BUILD_DIR)/portfoliodb
 
-portfoliodb: $(BUILD_DIR)/portfoliodb
+portfoliodb: $(PORTFOLIODB_BUILD_DIR)/portfoliodb
 
 # Build development Docker image
 dev:
 	@echo "Building development Docker image..."
 	cd docker && docker build --target dev -t portfoliodb:dev .
 
-# Build production Docker image
-prod: $(BUILD_DIR)/portfoliodb
-	@echo "Building production Docker image..."
-	cd docker && docker build --target prod -t portfoliodb:prod .
-
 # Initialize database (first run)
-init-db: $(POSTGRES_DATA_DIR)
-	cd docker && docker-compose --profile init up portfoliodb-init
+init-db: $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)
+	cd docker && DB_ACTION=init docker-compose up portfoliodb-init
 
 # Delete database data (clean slate)
-delete-db: $(POSTGRES_DATA_DIR)
-	cd docker && DB_ACTION=delete docker-compose --profile init up portfoliodb-init
+delete-db: $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)
+	cd docker && DB_ACTION=delete docker-compose up portfoliodb-init
 
 # Reset database (delete and rebuild from scratch)
-reset-db: $(POSTGRES_DATA_DIR)
-	cd docker && DB_ACTION=reset docker-compose --profile init up portfoliodb-init
+reset-db: $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)
+	cd docker && DB_ACTION=reset docker-compose up portfoliodb-init
 
 # Run functional tests
-func-test:
+func-test: $(POSTGRES_TEST_LOGS_DIR)
 	@echo "Running PortfolioDB functional tests..."
-	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) TEST_FILES="database" docker-compose --profile test up portfoliodb-test
+	@cd docker && TEST_FILES="staging" docker-compose up portfoliodb-test
 
 # Run tests (alias for func-test)
 test: func-test
 
-# Run specific test files
-# Usage: make test-files FILES="test_file1 test_file2"
-test-files:
-	@echo "Running specific test files..."
-	@cd docker && RUST_BACKTRACE=$(RUST_BACKTRACE) TEST_FILES="$(FILES)" docker-compose --profile test up portfoliodb-test
-
 # Run development environment
-run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR)
+run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)
 	@echo "Starting development environment with cargo-watch..."
-	cd docker && docker-compose up -d
+	cd docker && docker-compose up portfoliodb-dev
 	@echo "Development container started with hot reloading enabled."
 	@echo "Source code changes will automatically trigger rebuilds and restarts."
 	@echo "Run 'make logs' to view the container logs."
 
 logs:
-	cd docker && docker-compose logs --tail=20
+	cd docker && docker-compose logs --tail=100
 
 logs-watch:
 	cd docker && docker-compose logs -f
@@ -152,17 +159,25 @@ clean-submodules:
 	@echo "Cleaning submodule build artifacts..."
 	cd external/portfoliodb && cargo clean
 
+clean-run:
+	@echo "Cleaning run directory..."
+	rm -rf $(POSTGRES_DATA_DIR)/*
+	rm -rf $(POSTGRES_LOGS_DIR)/*
+	rm -rf $(POSTGRES_ETC_DIR)/*
+	rm -rf $(POSTGRES_TEST_LOGS_DIR)/*
+
 clean-all: clean clean-containers clean-images clean-submodules
 
 status:
 	@echo "=== PortfolioDB Build Status ==="
-	@echo "Production binary exists: $$([ -f $(BUILD_DIR)/portfoliodb ] && echo "Yes" || echo "No")"
+	@echo "Production binary exists: $$([ -f $(PORTFOLIODB_BUILD_DIR)/portfoliodb ] && echo "Yes" || echo "No")"
 	@echo "Submodule initialized: $$([ -d external/portfoliodb ] && echo "Yes" || echo "No")"
 	@echo "PostgreSQL data directory exists: $$([ -d $(POSTGRES_DATA_DIR) ] && echo "Yes" || echo "No")"
 	@echo "PostgreSQL logs directory exists: $$([ -d $(POSTGRES_LOGS_DIR) ] && echo "Yes" || echo "No")"
+	@echo "PostgreSQL etc directory exists: $$([ -d $(POSTGRES_ETC_DIR) ] && echo "Yes" || echo "No")"
 	@echo "Submodule status:"
 	@git submodule status 2>/dev/null || echo "No submodules configured"
 	@echo "Docker Compose services:"
 	@cd docker && docker-compose ps
 
-.PHONY: all help dev prod init-db delete-db reset-db test func-test test-files run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status
+.PHONY: all help dev init-db delete-db reset-db test func-test run logs logs-watch watch restart stop clean clean-containers clean-images clean-submodules clean-all status clean-run

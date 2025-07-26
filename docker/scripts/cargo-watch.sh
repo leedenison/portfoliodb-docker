@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Cargo Watch service control script for PortfolioDB development
-# Ensures PostgreSQL is running and starts cargo watch for hot reloading
 
 set -e
 
@@ -24,20 +23,11 @@ start_cargo_watch() {
     check_postgres
 
     cd "$SRC_DIR"
-    exec cargo watch \
+    exec su postgres -c "cargo watch \
         -w src \
         -w Cargo.toml \
         -w build.rs \
-        -s "cargo build --release && cargo run --release -- --database-url $DATABASE_URL"
+        -s \"cargo build --release && cargo run --release -- --database-url $DATABASE_URL\""
 }
 
-# Main script logic
-case "$1" in
-    start)
-        start_cargo_watch
-        ;;
-    *)
-        echo "Usage: $0 start"
-        exit 1
-        ;;
-esac 
+start_cargo_watch

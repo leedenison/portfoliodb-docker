@@ -2,16 +2,14 @@
 FROM rust:1.81-slim AS base
 
 # =============================================================================
-# BASE STAGE - PostgreSQL and TimescaleDB Installation
+# BASE STAGE - Production dependencies for PortfolioDB
 # =============================================================================
 
 # Switch to nightly Rust
-# TODO: Switch to stable when 2024 edition is available
 RUN rustup install nightly && rustup default nightly
 
-# Build arguments for user/group configuration
-ARG POSTGRES_UID=1100
-ARG POSTGRES_GID=1100
+ARG UID=1100
+ARG GID=1100
 
 # Install required utilities for repository setup
 RUN apt-get update && apt-get install -y lsb-release wget gpg ca-certificates
@@ -21,9 +19,8 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg ma
     && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg \
     && apt-key add /usr/share/keyrings/postgresql-archive-keyring.gpg
 
-# Create postgres user and group with specified UID/GID
-RUN groupadd -g $POSTGRES_GID postgres && \
-    useradd -r -u $POSTGRES_UID -g postgres -s /bin/bash postgres
+RUN groupadd -g $GID postgres && \
+    useradd -r -u $UID -g postgres -s /bin/bash postgres
 
 # Install PostgreSQL and TimescaleDB dependencies
 RUN apt-get update && apt-get install -y \
@@ -46,9 +43,8 @@ RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | gpg
     && apt-get remove --purge -y wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Remove the default cluster and re-create it
-RUN pg_dropcluster --stop 17 main && \
-    pg_createcluster 17 main
+# Drop the cluster since our data directory is mounted as a volume
+RUN pg_dropcluster --stop 17 main
 
 WORKDIR /opt/portfoliodb
 
@@ -59,9 +55,9 @@ COPY scripts/ /opt/portfoliodb/scripts/
 RUN chmod +x /opt/portfoliodb/scripts/*.sh
 
 # =============================================================================
-# DEPS STAGE - External Dependencies and Build Tools
+# COMMON DEV STAGE - Development Dependencies and Build Tools
 # =============================================================================
-FROM base AS deps
+FROM base AS common-dev
 
 # Install build dependencies for PortfolioDB
 RUN apt-get update && apt-get install -y \
@@ -74,38 +70,33 @@ RUN apt-get update && apt-get install -y \
 RUN cargo install cargo-watch
 
 # =============================================================================
-# DEVELOPMENT STAGE - Development Environment with Hot Reload
+# INIT STAGE - Database Initialization
 # =============================================================================
-FROM deps AS dev
+FROM common-dev AS init
+
+CMD ["/opt/portfoliodb/scripts/init-db.sh"]
+
+# =============================================================================
+# TEST STAGE - Test Environment with shared logs
+# =============================================================================
+FROM common-dev AS test
 
 # Create src mount directory
 RUN mkdir -p /opt/portfoliodb/src
 
-# Create test logs directory
-RUN mkdir -p /tmp/portfoliodb/logs/test
+EXPOSE 50001 5432
+
+CMD ["/opt/portfoliodb/scripts/test.sh"]
+
+# =============================================================================
+# DEVELOPMENT STAGE - Development Environment with Hot Reload
+# =============================================================================
+FROM common-dev AS dev
+
+# Create src mount directory
+RUN mkdir -p /opt/portfoliodb/src
 
 EXPOSE 50001 5432
 
-# Use cargo-watch.sh as the main executable for dev stage
-CMD ["/opt/portfoliodb/scripts/cargo-watch.sh", "start"]
-
-# =============================================================================
-# PRODUCTION STAGE - Optimized Production Environment
-# =============================================================================
-FROM base AS prod
-
-# Create prod-specific directory
-RUN mkdir -p /var/lib/postgresql/data
-
-# Copy the PortfolioDB binary
-COPY bin/portfoliodb /opt/portfoliodb/portfoliodb
-
-# Create a non-root user
-RUN useradd -r -s /bin/false portfoliodb && \
-    chown -R portfoliodb:portfoliodb /opt/portfoliodb
-
-USER portfoliodb
-
-EXPOSE 50001
-
-CMD ["/opt/portfoliodb/scripts/services.sh", "start"] 
+# cargo-watch.sh rebuilds the binary on demand
+CMD ["/opt/portfoliodb/scripts/cargo-watch.sh"]

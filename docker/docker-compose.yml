@@ -4,25 +4,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: dev
+      target: init
       args:
-        POSTGRES_UID: ${POSTGRES_UID:-1100}
-        POSTGRES_GID: ${POSTGRES_GID:-1100}
+        UID: ${UID:-1100}
+        GID: ${GID:-1100}
     container_name: portfoliodb-init
     volumes:
-      - ../external/portfoliodb:/opt/portfoliodb/src
-      - /tmp/portfoliodb/data:/var/lib/postgresql/17/main
+      - ${PORTFOLIODB_REPO_DIR:-../external/portfoliodb}:/opt/portfoliodb/src
+      - ${POSTGRES_DATA_DIR:-../run/postgres/data}:/var/lib/postgresql/17
+      - ${POSTGRES_ETC_DIR:-../run/postgres/etc}:/etc/postgresql/17
     environment:
       - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
       - POSTGRES_HOST=localhost
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=portfoliodb
-      - POSTGRES_PASSWORD=portfoliodb_dev_password
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev
       - POSTGRES_DB=portfoliodb
       - DB_ACTION=${DB_ACTION:-init}
-    command: [ "/opt/portfoliodb/scripts/init-db.sh" ]
-    profiles:
-      - init
 
   # Main development service
   portfoliodb-dev:
@@ -31,19 +29,20 @@ services:
       dockerfile: Dockerfile
       target: dev
       args:
-        POSTGRES_UID: ${POSTGRES_UID:-1100}
-        POSTGRES_GID: ${POSTGRES_GID:-1100}
+        UID: ${UID:-1100}
+        GID: ${GID:-1100}
     container_name: portfoliodb-dev
     ports:
       - "50001:50001"
       - "5432:5432"
     volumes:
-      - ../external/portfoliodb:/opt/portfoliodb/src
-      - /tmp/portfoliodb/data:/var/lib/postgresql/17/main
-      - /tmp/portfoliodb/logs/postgresql:/var/log/postgresql
+      - ${PORTFOLIODB_REPO_DIR:-../external/portfoliodb}:/opt/portfoliodb/src
+      - ${POSTGRES_DATA_DIR:-../run/postgres/data}:/var/lib/postgresql/17
+      - ${POSTGRES_ETC_DIR:-../run/postgres/etc}:/etc/postgresql/17
+      - ${POSTGRES_LOGS_DIR:-../run/postgres/logs}:/var/log/postgresql
     environment:
       - RUST_LOG=debug
-      - DATABASE_URL=postgres://portfoliodb:portfoliodb_dev_password@localhost:5432/portfoliodb
+      - DATABASE_URL=postgres://dev:dev@localhost:5432/portfoliodb
       - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
     restart: unless-stopped
 
@@ -52,28 +51,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: dev
+      target: test
       args:
-        POSTGRES_UID: ${POSTGRES_UID:-1100}
-        POSTGRES_GID: ${POSTGRES_GID:-1100}
+        UID: ${UID:-1100}
+        GID: ${GID:-1100}
     container_name: portfoliodb-test
     volumes:
-      - ../external/portfoliodb:/opt/portfoliodb/src
-      - /tmp/portfoliodb/logs/test:/tmp/portfoliodb/logs/test
+      - ${PORTFOLIODB_REPO_DIR:-../external/portfoliodb}:/opt/portfoliodb/src
+      - ${POSTGRES_TEST_LOGS_DIR:-../run/test/logs/postgres}:/var/log/postgresql
     environment:
-      - POSTGRES_DATA_DIR=/var/lib/postgresql/17/main
-      - POSTGRES_HOST=localhost
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=portfoliodb
-      - POSTGRES_PASSWORD=portfoliodb_test_password
-      - POSTGRES_DB=portfoliodb_test
-      - DATABASE_URL=postgres://portfoliodb:portfoliodb_test_password@localhost:5432/portfoliodb_test
-      - RUST_LOG=debug
       - RUST_BACKTRACE=${RUST_BACKTRACE:-0}
       - TEST_FILES=${TEST_FILES:-}
-    command: [ "/opt/portfoliodb/scripts/test.sh" ]
-    profiles:
-      - test
 
 volumes:
   postgres_data:
