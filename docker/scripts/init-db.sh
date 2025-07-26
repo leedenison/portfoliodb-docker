@@ -68,8 +68,10 @@ delete_database() {
     echo "Deleting database data..."
     
     if pg_lsclusters | grep -q "$POSTGRES_VERSION/$CLUSTER_NAME"; then
+        echo "Stopping PostgreSQL cluster..."
+        pg_ctlcluster $POSTGRES_VERSION $CLUSTER_NAME stop || true
         echo "Dropping PostgreSQL cluster..."
-        pg_dropcluster $POSTGRES_VERSION $CLUSTER_NAME
+        pg_dropcluster $POSTGRES_VERSION $CLUSTER_NAME --stop
         echo "PostgreSQL cluster dropped"
     else
         echo "PostgreSQL cluster does not exist"

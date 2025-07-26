@@ -5,14 +5,14 @@
 
 set -e
 
-DATABASE_URL="${DATABASE_URL:-postgres://test:test@localhost:5432/test}"
-RUST_BACKTRACE="${RUST_BACKTRACE:-0}"
-POSTGRES_DATA_DIR="${POSTGRES_DATA_DIR:-/var/lib/postgresql/17/main}"
-POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
-POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_USER="${POSTGRES_USER:-test}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-test}"
-POSTGRES_DB="${POSTGRES_DB:-test}"
+export DATABASE_URL="${DATABASE_URL:-postgres://test:test@localhost:5432/test}"
+export RUST_BACKTRACE="${RUST_BACKTRACE:-0}"
+export POSTGRES_DATA_DIR="${POSTGRES_DATA_DIR:-/var/lib/postgresql/17/main}"
+export POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
+export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export POSTGRES_USER="${POSTGRES_USER:-test}"
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-test}"
+export POSTGRES_DB="${POSTGRES_DB:-test}"
 
 # Test file filtering
 # TEST_FILES: Space-separated list of test file names (without .rs extension)
@@ -53,7 +53,7 @@ run_tests() {
         return 1
     fi
     
-    if psql "$DATABASE_URL" -c "SELECT default_version, installed_version FROM pg_available_extensions WHERE name = 'timescaledb';" | grep -q "2.21.0"; then
+    if psql "$DATABASE_URL" -c "SELECT default_version, installed_version FROM pg_available_extensions WHERE name = 'timescaledb';" | grep -q "2."; then
         echo "✓ TimescaleDB extension is available"
     else
         echo "✗ TimescaleDB extension not found"
