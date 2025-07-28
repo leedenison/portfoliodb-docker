@@ -22,11 +22,11 @@ export POSTGRES_ETC_DIR = $(PROJECT_DIR)/run/postgres/etc
 
 export POSTGRES_TEST_LOGS_DIR = $(PROJECT_DIR)/run/test/logs/postgres
 
-all: prod
+all: portfoliodb
 
 help:
 	@echo "Main Targets:"
-	@echo "  all          - Build production and dev images (default)"
+	@echo "  all          - Build PortfolioDB binary (default)"
 	@echo "  dev          - Build development Docker image"
 	@echo "  portfoliodb  - Build PortfolioDB binary only"
 	@echo ""
