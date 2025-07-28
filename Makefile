@@ -90,7 +90,7 @@ $(PORTFOLIODB_REPO_DIR)/Cargo.toml:
 
 $(PORTFOLIODB_BUILD_DIR)/portfoliodb: $(PORTFOLIODB_REPO_DIR)/Cargo.toml
 	@echo "Building PortfolioDB binary..."
-	(cd $(PORTFOLIODB_REPO_DIR) && cargo build --release) && cp $(PORTFOLIODB_BUILD_DIR)/portfoliodb $(PORTFOLIODB_BUILD_DIR)/portfoliodb
+	(cd $(PORTFOLIODB_REPO_DIR) && cargo build --release)
 
 portfoliodb: $(PORTFOLIODB_BUILD_DIR)/portfoliodb
 
@@ -139,7 +139,7 @@ stop:
 
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -rf $(BUILD_DIR)
+	rm -rf $(PORTFOLIODB_BUILD_DIR)
 
 clean-containers:
 	@echo "Cleaning Docker containers..."

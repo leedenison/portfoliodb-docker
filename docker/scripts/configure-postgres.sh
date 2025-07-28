@@ -80,7 +80,7 @@ configure_pg_cron() {
         WHERE name = 'pg_cron';
 EOSQL
     
-    # Then, create pg_cron extension in the portfoliodb database
+    # Then, create pg_cron extension
     psql -d $POSTGRES_DB <<-EOSQL
         -- Create the pg_cron extension
         CREATE EXTENSION IF NOT EXISTS pg_cron;
