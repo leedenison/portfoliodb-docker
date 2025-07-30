@@ -36,7 +36,7 @@ help:
 	@echo "  reset-db     - Reset dev database (delete-db then init-db)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test         - Run all tests"
+	@echo "  test         - Run unit tests with cargo"
 	@echo "  func-test    - Run functional tests (runs in a dedicated container)"
 	@echo ""
 	@echo "Development:"
@@ -116,8 +116,10 @@ func-test: $(POSTGRES_TEST_LOGS_DIR)
 	@echo "Running PortfolioDB functional tests..."
 	@cd docker && TEST_FILES="staging" docker-compose up portfoliodb-test
 
-# Run tests (alias for func-test)
-test: func-test
+# Run unit tests with cargo
+test: $(PORTFOLIODB_REPO_DIR)/Cargo.toml
+	@echo "Running PortfolioDB unit tests..."
+	(cd $(PORTFOLIODB_REPO_DIR) && cargo test)
 
 # Run development environment
 run: docker $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)

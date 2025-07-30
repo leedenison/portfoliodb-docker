@@ -14,6 +14,8 @@ export POSTGRES_USER="${POSTGRES_USER:-test}"
 export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-test}"
 export POSTGRES_DB="${POSTGRES_DB:-test}"
 
+export CARGO_HOME=/tmp/cargo_home
+
 # Test file filtering
 # TEST_FILES: Space-separated list of test file names (without .rs extension)
 # Example: TEST_FILES="auth_tests user_tests"
@@ -67,7 +69,7 @@ run_tests() {
         return 1
     fi
     
-    if cargo check --quiet; then
+    if su postgres -c "cargo check --quiet"; then
         echo "✓ Project builds successfully"
     else
         echo "✗ Project build failed"
@@ -76,7 +78,7 @@ run_tests() {
     
     build_test_args
     
-    if cargo test $TEST_FILES_ARGS -- --nocapture ; then
+    if su postgres -c "cargo test --features database --test $TEST_FILES_ARGS -- --nocapture"; then
         echo "All cargo tests passed ✓"
     else
         echo "cargo tests failed ✗"
