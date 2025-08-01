@@ -24,9 +24,9 @@ This project provides a Docker-based development environment for PortfolioDB wit
 ## Available Commands
 
 ### Build Commands
-- `make all` - Build all Docker images
+- `make all` - Build PortfolioDB binary (default)
 - `make dev` - Build development Docker image
-- `make prod` - Build production Docker image
+- `make portfoliodb` - Build PortfolioDB binary only
 
 ### Database Commands
 - `make init-db` - Initialize database
@@ -39,14 +39,17 @@ This project provides a Docker-based development environment for PortfolioDB wit
 
 ### Docker Commands
 - `make run` - Start development container with hot reloading (requires existing database)
-- `make stop` - Stop development container
+- `make stop` - Stop development containers
 - `make logs` - View logs from development container
 - `make logs-watch` - View logs with continuous monitoring
 
 ### Utility Commands
 - `make clean` - Clean build artifacts
-- `make clean-all` - Clean all artifacts (does not delete the database)
+- `make clean-containers` - Clean Docker containers
+- `make clean-images` - Clean Docker images
+- `make clean-all` - Clean everything (build artifacts, containers, images, submodules)
 - `make status` - Show current build status
+- `make help` - Show detailed help with all available commands
 
 ## Development Workflow
 
@@ -59,8 +62,7 @@ This project provides a Docker-based development environment for PortfolioDB wit
    ```bash
    make run
    ```
-   This starts the development container with hot reloading enabled. Source code changes will automatically trigger rebuilds and restarts.  Check progress with `make logs`
-
+   This starts the development container with hot reloading enabled. Source code changes will automatically trigger rebuilds and restarts. Check progress with `make logs` or `make logs-watch`.
 
    The development environment uses cargo-watch to automatically:
    - Watch for source code changes
