@@ -78,7 +78,7 @@ run_tests() {
     
     build_test_args
     
-    if su postgres -c "cargo test --features database --test $TEST_FILES_ARGS -- --nocapture"; then
+    if su postgres -c "cargo test --features test_class_database --test $TEST_FILES_ARGS -- --nocapture"; then
         echo "All cargo tests passed ✓"
     else
         echo "cargo tests failed ✗"

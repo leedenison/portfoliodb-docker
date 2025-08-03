@@ -111,9 +111,9 @@ delete-db: $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)
 reset-db: $(POSTGRES_DATA_DIR) $(POSTGRES_LOGS_DIR) $(POSTGRES_ETC_DIR)
 	cd docker && DB_ACTION=reset docker-compose up portfoliodb-init
 
-# Run functional tests
-func-test: $(POSTGRES_TEST_LOGS_DIR)
-	@echo "Running PortfolioDB functional tests..."
+# Run integration tests
+integration-test: $(POSTGRES_TEST_LOGS_DIR)
+	@echo "Running PortfolioDB integration tests..."
 	@cd docker && TEST_FILES="staging" docker-compose up portfoliodb-test
 
 # Run unit tests with cargo
