@@ -88,11 +88,9 @@ $(PORTFOLIODB_REPO_DIR)/Cargo.toml:
 	@echo "Initializing and updating PortfolioDB submodule..."
 	git submodule update --init --recursive
 
-$(PORTFOLIODB_BUILD_DIR)/portfoliodb: $(PORTFOLIODB_REPO_DIR)/Cargo.toml
+portfoliodb: $(PORTFOLIODB_REPO_DIR)/Cargo.toml
 	@echo "Building PortfolioDB binary..."
-	(cd $(PORTFOLIODB_REPO_DIR) && cargo build --release)
-
-portfoliodb: $(PORTFOLIODB_BUILD_DIR)/portfoliodb
+	(cd $(PORTFOLIODB_REPO_DIR) && touch src/main.rs && cargo build --release)
 
 # Build development Docker image
 dev:
